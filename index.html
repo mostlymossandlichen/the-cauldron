@@ -6,7 +6,14 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="The Cauldron &amp; Spoon">
+<meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+<meta http-equiv="Pragma" content="no-cache">
+<meta http-equiv="Expires" content="0">
 <title>The Cauldron & Spoon</title>
+<meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+<meta http-equiv="Pragma" content="no-cache">
+<meta http-equiv="Expires" content="0">
+<meta name="version" content="2.4">
 <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,500;1,400&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
 <style>
 :root {
@@ -110,7 +117,7 @@ body{font-family:var(--font-body);background:var(--h2);color:var(--ink);font-siz
 .recipe-card:active{transform:scale(.97);}
 .recipe-card-cover{height:70px;display:flex;align-items:center;justify-content:center;font-size:28px;background:var(--tagbg);position:relative;overflow:hidden;}
 .recipe-card-cover img{width:100%;height:100%;object-fit:cover;}
-.recipe-card-fav{position:absolute;top:5px;right:6px;font-size:14px;color:rgba(255,255,255,0.9);z-index:2;text-shadow:0 1px 3px rgba(0,0,0,0.4);}
+.recipe-card-fav{position:absolute;top:5px;right:6px;z-index:2;filter:drop-shadow(0 1px 2px rgba(0,0,0,0.5));}
 .recipe-card-body{padding:7px 9px 9px;}
 .recipe-card-name{font-family:var(--font-display);font-size:12px;color:var(--ink);line-height:1.3;margin-bottom:4px;}
 .recipe-card-meta{display:flex;align-items:center;justify-content:space-between;margin-bottom:3px;}
@@ -515,7 +522,7 @@ body{font-family:var(--font-body);background:var(--h2);color:var(--ink);font-siz
     </div>
   </div>
   <div class="screen-body">
-    <div class="shop-hint">← swipe to delete · drag ⠿ to reorder · drag onto item to group</div>
+    <div class="shop-hint">← swipe to delete · drag ⠿ to reorder · tap ↦ to group under item above</div>
     <div style="padding:6px 14px 14px;" id="shop-list"></div>
   </div>
   <div class="bottom-nav">
@@ -896,7 +903,7 @@ function renderHome(){
         ontouchmove="cardTouchMove(event)">
         <div class="recipe-card-cover" style="background:${r.coverBg||'var(--tagbg)'}">
           ${r.coverType==='photo'&&r.coverPhoto?`<img src="${r.coverPhoto}"/>`:`<span>${r.coverEmoji||'🫙'}</span>`}
-          ${r.favorited?'<div class="recipe-card-fav">♥</div>':''}
+          ${r.favorited?'<div class="recipe-card-fav"><svg width="14" height="13" viewBox="0 0 24 22" fill="rgba(255,255,255,0.95)"><path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.27 2 8.5 2 5.41 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.41 22 8.5c0 3.77-3.4 6.86-8.55 11.54L12 21.35z"/></svg></div>':''}
         </div>
         <div class="recipe-card-body">
           <div class="recipe-card-name">${r.name}</div>
@@ -1226,27 +1233,39 @@ function ingDrop(e,i){
   iter.ingredients.splice(i,0,moved);
   ingDragSrcIdx=null;r.updatedAt=Date.now();saveState();renderIteration(r,currentIterIdx);
 }
-// Touch drag for ingredients on mobile
-let ingTouchSrcIdx=null,ingTouchStartY=0;
-function ingTouchStart(e,i){e.preventDefault();ingTouchSrcIdx=i;ingTouchStartY=e.touches[0].clientY;document.getElementById('ing-row-'+i).style.opacity='0.6';}
-function ingTouchMove(e,i){e.preventDefault();}
+// Touch drag for ingredients on mobile — attached to the ⠿ handle only
+let ingTouchSrcIdx=null,ingTouchStartY=0,ingTouchEl=null;
+function ingTouchStart(e,i){
+  e.preventDefault();
+  ingTouchSrcIdx=i;
+  ingTouchStartY=e.touches[0].clientY;
+  ingTouchEl=document.getElementById('ing-row-'+i);
+  if(ingTouchEl){ingTouchEl.style.opacity='0.5';ingTouchEl.style.transition='none';}
+}
+function ingTouchMove(e,i){
+  e.preventDefault();
+  if(ingTouchEl){
+    const dy=e.touches[0].clientY-ingTouchStartY;
+    ingTouchEl.style.transform=`translateY(${dy}px)`;
+  }
+}
 function ingTouchEnd(e,i){
-  const el=document.getElementById('ing-row-'+i);if(el)el.style.opacity='1';
-  if(ingTouchSrcIdx===null)return;
-  const endY=e.changedTouches[0].clientY;
-  const dy=endY-ingTouchStartY;
-  const rows=document.querySelectorAll('.ingredient-row');
-  const rowH=rows[0]?rows[0].offsetHeight:44;
-  let newIdx=ingTouchSrcIdx+Math.round(dy/rowH);
-  const r=state.recipes.find(x=>x.id===currentRecipeId);if(!r){ingTouchSrcIdx=null;return;}
+  if(!ingTouchEl){ingTouchSrcIdx=null;return;}
+  ingTouchEl.style.opacity='1';
+  ingTouchEl.style.transform='';
+  ingTouchEl.style.transition='';
+  const dy=e.changedTouches[0].clientY-ingTouchStartY;
+  const rowH=ingTouchEl.offsetHeight||44;
+  const r=state.recipes.find(x=>x.id===currentRecipeId);
+  if(!r){ingTouchSrcIdx=null;ingTouchEl=null;return;}
   const iter=r.iterations[currentIterIdx];
-  newIdx=Math.max(0,Math.min(iter.ingredients.length-1,newIdx));
-  if(newIdx!==ingTouchSrcIdx){
-    const moved=iter.ingredients.splice(ingTouchSrcIdx,1)[0];
+  let newIdx=Math.max(0,Math.min(iter.ingredients.length-1,i+Math.round(dy/rowH)));
+  if(newIdx!==i){
+    const moved=iter.ingredients.splice(i,1)[0];
     iter.ingredients.splice(newIdx,0,moved);
     r.updatedAt=Date.now();saveState();
   }
-  ingTouchSrcIdx=null;renderIteration(r,currentIterIdx);
+  ingTouchSrcIdx=null;ingTouchEl=null;renderIteration(r,currentIterIdx);
 }
 
 // Custom field drag reorder
@@ -1262,19 +1281,28 @@ function cfDrop(e,i){
   iter.customFields.splice(i,0,moved);
   cfDragSrcIdx=null;r.updatedAt=Date.now();saveState();renderIteration(r,currentIterIdx);
 }
-let cfTouchSrcIdx=null,cfTouchStartY=0;
-function cfTouchStart(e,i){e.preventDefault();cfTouchSrcIdx=i;cfTouchStartY=e.touches[0].clientY;document.getElementById('cf-row-'+i).style.opacity='0.6';}
-function cfTouchMove(e,i){e.preventDefault();}
+let cfTouchSrcIdx=null,cfTouchStartY=0,cfTouchEl=null;
+function cfTouchStart(e,i){
+  e.preventDefault();
+  cfTouchSrcIdx=i;cfTouchStartY=e.touches[0].clientY;
+  cfTouchEl=document.getElementById('cf-row-'+i);
+  if(cfTouchEl){cfTouchEl.style.opacity='0.5';cfTouchEl.style.transition='none';}
+}
+function cfTouchMove(e,i){
+  e.preventDefault();
+  if(cfTouchEl){cfTouchEl.style.transform=`translateY(${e.touches[0].clientY-cfTouchStartY}px)`;}
+}
 function cfTouchEnd(e,i){
-  const el=document.getElementById('cf-row-'+i);if(el)el.style.opacity='1';
-  if(cfTouchSrcIdx===null)return;
+  if(!cfTouchEl){cfTouchSrcIdx=null;return;}
+  cfTouchEl.style.opacity='1';cfTouchEl.style.transform='';cfTouchEl.style.transition='';
   const dy=e.changedTouches[0].clientY-cfTouchStartY;
-  const r=state.recipes.find(x=>x.id===currentRecipeId);if(!r){cfTouchSrcIdx=null;return;}
+  const r=state.recipes.find(x=>x.id===currentRecipeId);
+  if(!r){cfTouchSrcIdx=null;cfTouchEl=null;return;}
   const iter=r.iterations[currentIterIdx];
-  const rowH=48;
-  let newIdx=Math.max(0,Math.min(iter.customFields.length-1,cfTouchSrcIdx+Math.round(dy/rowH)));
-  if(newIdx!==cfTouchSrcIdx){const moved=iter.customFields.splice(cfTouchSrcIdx,1)[0];iter.customFields.splice(newIdx,0,moved);r.updatedAt=Date.now();saveState();}
-  cfTouchSrcIdx=null;renderIteration(r,currentIterIdx);
+  const rowH=cfTouchEl.offsetHeight||44;
+  let newIdx=Math.max(0,Math.min(iter.customFields.length-1,i+Math.round(dy/rowH)));
+  if(newIdx!==i){const moved=iter.customFields.splice(i,1)[0];iter.customFields.splice(newIdx,0,moved);r.updatedAt=Date.now();saveState();}
+  cfTouchSrcIdx=null;cfTouchEl=null;renderIteration(r,currentIterIdx);
 }
 // Swipe ingredient to shopping
 let swipeStartX=0;
@@ -1615,31 +1643,30 @@ function renderShopping(){
   el.innerHTML=list.map((item,i)=>{
     const isChild=!!item.parentGroup;
     const isHeader=!!item.isGroupHeader;
-    return `<div class="shop-item ${item.checked?'completed':''} ${isChild?'shop-subitem-row':''} ${isHeader?'shop-group-row':''}" id="shop-item-${i}"
-      draggable="true"
-      ondragstart="shopDragStart(event,${i})"
-      ondragover="shopDragOver(event,${i})"
-      ondrop="shopDrop(event,${i})"
-      ondragleave="shopDragLeave(event,${i})"
-      ontouchstart="shopSwipeStart(event,${i})" ontouchend="shopSwipeEnd(event,${i})"
-      style="${isChild?'margin-left:26px;background:var(--card);border-left:3px solid var(--h);border-radius:0 10px 10px 0;margin-bottom:3px;padding-left:10px;':''}${isHeader?'border-color:var(--h);border-width:1.5px;':''}">
+    const canIndent=!isChild&&i>0;
+    return `<div class="shop-item ${item.checked?'completed':''}" id="shop-item-${i}"
+      ontouchstart="shopTouchStart(event,${i})"
+      ontouchmove="shopTouchMove(event,${i})"
+      ontouchend="shopTouchEnd(event,${i})"
+      style="${isChild?'margin-left:26px;border-left:3px solid var(--h);border-radius:0 10px 10px 0;margin-bottom:3px;padding-left:10px;':''}${isHeader?'border-color:var(--h);border-width:1.5px;':''}">
       <div class="shop-checkbox ${item.checked?'checked':''}" onclick="toggleShopItem(${i})">
         ${item.checked?`<svg width="10" height="8" viewBox="0 0 10 8"><polyline points="1,4 4,7 9,1" stroke="white" stroke-width="1.8" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>`:''}
       </div>
-      <span class="shop-item-name" 
+      <span class="shop-item-name"
         contenteditable="true"
         data-idx="${i}"
         onblur="saveShopItemName(this)"
         onkeydown="if(event.key==='Enter'){event.preventDefault();this.blur();}"
         onclick="event.stopPropagation()"
-        style="outline:none;min-width:10px;"
-        >${isHeader?'<strong>'+item.name+'</strong>':item.name}</span>
+        style="outline:none;min-width:10px;flex:1;">
+        ${item.name}
+      </span>
       ${item.amount?`<span class="shop-item-amt">${item.amount}</span>`:''}
-      ${isChild?`<span style="font-family:var(--font-body);font-size:10px;color:var(--inks);cursor:pointer;padding:2px 6px;" onclick="ungroupItem(${i})">✕ ungroup</span>`:''}
-      <span class="shop-drag" 
-        ontouchstart="shopTouchDragStart(event,${i})"
-        ontouchmove="shopTouchDragMove(event,${i})"
-        ontouchend="shopTouchDragEnd(event,${i})">⠿</span>
+      <div style="display:flex;align-items:center;gap:4px;flex-shrink:0;">
+        ${isChild?`<span style="font-family:var(--font-body);font-size:10px;color:var(--tm);cursor:pointer;padding:2px 5px;border:1px solid var(--sand);border-radius:8px;" onclick="ungroupItem(${i})">↤</span>`:''}
+        ${canIndent?`<span style="font-family:var(--font-body);font-size:10px;color:var(--tm);cursor:pointer;padding:2px 5px;border:1px solid var(--sand);border-radius:8px;" onclick="indentItem(${i})">↦</span>`:''}
+        <span class="shop-drag" style="touch-action:none;padding:4px 6px;cursor:grab;">⠿</span>
+      </div>
       <div class="shop-delete-reveal" id="shop-del-${i}" style="display:none;" onclick="deleteShopItem(${i})">
         <svg width="20" height="20" viewBox="0 0 24 24" fill="none"><polyline points="3 6 5 6 21 6" stroke="white" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6" stroke="white" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/><path d="M10 11v6M14 11v6" stroke="white" stroke-width="1.8" stroke-linecap="round"/><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2" stroke="white" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
       </div>
@@ -1678,119 +1705,124 @@ function saveShopItemName(el){
   saveState();
 }
 
-// Shopping swipe
-let shopSwipeX=0,shopSwiped=null;
-function shopSwipeStart(e,i){shopSwipeX=e.touches[0].clientX;if(shopSwiped!==null&&shopSwiped!==i)closeShopSwipe(shopSwiped);}
-function shopSwipeEnd(e,i){
-  const dx=e.changedTouches[0].clientX-shopSwipeX;
-  if(dx<-50){
+// ── Shopping list — unified touch handler ────────────────────────────────────
+// Single ontouchstart/move/end on each item handles BOTH swipe-to-delete
+// and drag-to-reorder based on direction of movement.
+let shopSwipeX=0,shopSwipeY=0,shopSwiped=null;
+let shopDragIdx=null,shopDragEl=null,shopDragStartY=0,shopDragMode=false;
+let shopDragPlaceholder=null;
+
+function shopTouchStart(e,i){
+  const t=e.touches[0];
+  shopSwipeX=t.clientX;shopSwipeY=t.clientY;
+  shopDragIdx=i;shopDragMode=false;
+  // Close any open swipe if tapping elsewhere
+  if(shopSwiped!==null&&shopSwiped!==i)closeShopSwipe(shopSwiped);
+}
+
+function shopTouchMove(e,i){
+  if(e.touches.length!==1)return;
+  const t=e.touches[0];
+  const dx=t.clientX-shopSwipeX;
+  const dy=t.clientY-shopSwipeY;
+
+  if(!shopDragMode&&Math.abs(dy)>Math.abs(dx)&&Math.abs(dy)>8){
+    // Vertical movement = drag to reorder
+    shopDragMode=true;
+    shopDragStartY=t.clientY;
+    shopDragEl=document.getElementById('shop-item-'+i);
+    if(shopDragEl)shopDragEl.style.opacity='0.5';
+    e.preventDefault();
+  } else if(!shopDragMode&&Math.abs(dx)>Math.abs(dy)&&Math.abs(dx)>8){
+    // Horizontal movement = swipe to delete — let it handle in touchEnd
+    e.preventDefault();
+    return;
+  }
+
+  if(shopDragMode){
+    e.preventDefault();
+    // Visual feedback — shift the element
+    if(shopDragEl)shopDragEl.style.transform=`translateY(${dy}px)`;
+  }
+}
+
+function shopTouchEnd(e,i){
+  const t=e.changedTouches[0];
+  const dx=t.clientX-shopSwipeX;
+  const dy=t.clientY-shopSwipeY;
+
+  if(shopDragMode){
+    // Finish drag-to-reorder
+    if(shopDragEl){shopDragEl.style.opacity='';shopDragEl.style.transform='';}
+    const itemH=60;
+    let newIdx=i+Math.round(dy/itemH);
+    newIdx=Math.max(0,Math.min(state.shoppingList.length-1,newIdx));
+    if(newIdx!==i){
+      const moved=state.shoppingList.splice(i,1)[0];
+      state.shoppingList.splice(newIdx,0,moved);
+      saveState();
+    }
+    shopDragMode=false;shopDragIdx=null;shopDragEl=null;
+    renderShopping();
+    return;
+  }
+
+  // Swipe left to reveal delete
+  if(dx<-50&&Math.abs(dy)<30){
     if(shopSwiped!==null&&shopSwiped!==i)closeShopSwipe(shopSwiped);
     const item=document.getElementById('shop-item-'+i);
     const del=document.getElementById('shop-del-'+i);
     if(item&&del){item.classList.add('swiping');del.style.display='flex';shopSwiped=i;}
-  } else if(dx>20){closeShopSwipe(i);}
-}
-function closeShopSwipe(i){
-  const item=document.getElementById('shop-item-'+i);const del=document.getElementById('shop-del-'+i);
-  if(item)item.classList.remove('swiping');if(del)del.style.display='none';shopSwiped=null;
+    return;
+  }
+  // Swipe right to close delete
+  if(dx>20&&shopSwiped===i){closeShopSwipe(i);return;}
 }
 
-// Shopping drag-to-reorder
-let shopDragIdx=null;
-function shopDragStart(e,i){shopDragIdx=i;e.dataTransfer.effectAllowed='move';document.getElementById('shop-item-'+i).classList.add('dragging');}
-function shopDragOver(e,i){
-  e.preventDefault();e.dataTransfer.dropEffect='move';
-  // Check if dragging onto same item to create group
-  if(shopDragIdx!==null&&shopDragIdx!==i){
-    document.getElementById('shop-item-'+i).classList.add('drag-over');
-  }
+function closeShopSwipe(i){
+  const item=document.getElementById('shop-item-'+i);
+  const del=document.getElementById('shop-del-'+i);
+  if(item)item.classList.remove('swiping');
+  if(del)del.style.display='none';
+  shopSwiped=null;
 }
-function shopDragLeave(e,i){document.getElementById('shop-item-'+i).classList.remove('drag-over');}
+
+// Indent button: tap ↦ to make item a child of the item above it
+function indentItem(i){
+  const item=state.shoppingList[i];
+  const above=state.shoppingList[i-1];
+  if(!item||!above)return;
+  // Ensure above item has an id
+  if(!above.id)above.id='grp_'+Date.now();
+  // Make above item the header
+  above.isGroupHeader=true;
+  // Attach this item to that group
+  item.parentGroup=above.id;
+  if(!item.id)item.id='item_'+Date.now();
+  delete item.isGroupHeader;
+  saveState();renderShopping();
+}
+
+// Desktop drag (mouse) — still works on desktop
+let shopMouseDragIdx=null;
+function shopDragStart(e,i){shopMouseDragIdx=i;e.dataTransfer.effectAllowed='move';}
+function shopDragOver(e,i){e.preventDefault();}
+function shopDragLeave(e,i){document.getElementById('shop-item-'+i)&&document.getElementById('shop-item-'+i).classList.remove('drag-over');}
 function shopDrop(e,i){
   e.preventDefault();
-  document.querySelectorAll('.shop-item').forEach(el=>{el.classList.remove('dragging','drag-over');});
-  if(shopDragIdx===null||shopDragIdx===i){shopDragIdx=null;return;}
-  const el=document.getElementById('shop-item-'+i);
-  if(!el){shopDragIdx=null;return;}
-  const bounds=el.getBoundingClientRect();
-  const relY=(e.clientY-bounds.top)/bounds.height;
-  const srcItem=state.shoppingList[shopDragIdx];
-  const tgtItem=state.shoppingList[i];
-  if(!srcItem||!tgtItem){shopDragIdx=null;return;}
-
-  if(relY>0.2&&relY<0.8){
-    // GROUP: determine which header to attach src to
-    let headerId;
-    if(tgtItem.isGroupHeader){
-      // Dropping onto a header → add to this group
-      headerId=tgtItem.id;
-    } else if(tgtItem.parentGroup){
-      // Dropping onto a child → add to same parent group
-      headerId=tgtItem.parentGroup;
-    } else {
-      // Dropping onto a standalone → make tgt the header
-      if(!tgtItem.id)tgtItem.id='grp_'+Date.now();
-      tgtItem.isGroupHeader=true;
-      headerId=tgtItem.id;
-    }
-    // Ensure src has an id and attach to group
-    if(!srcItem.id)srcItem.id='item_'+Date.now();
-    srcItem.parentGroup=headerId;
-    delete srcItem.isGroupHeader; // src can't also be a header
-    // Remove src from list
-    state.shoppingList.splice(shopDragIdx,1);
-    // Re-find header after splice (index may have shifted)
-    const headerIdx=state.shoppingList.findIndex(x=>x.id===headerId);
-    if(headerIdx===-1){
-      // Header was the src item itself somehow — abort grouping, just append
-      delete srcItem.parentGroup;
-      state.shoppingList.push(srcItem);
-    } else {
-      // Insert after all existing children of this header
-      let insertAt=headerIdx+1;
-      while(insertAt<state.shoppingList.length&&state.shoppingList[insertAt].parentGroup===headerId)insertAt++;
-      state.shoppingList.splice(insertAt,0,srcItem);
-    }
-  } else {
-    // REORDER: plain positional move
-    const moved=state.shoppingList.splice(shopDragIdx,1)[0];
-    const finalIdx=Math.max(0,Math.min(state.shoppingList.length,shopDragIdx<i?i-1:i));
-    state.shoppingList.splice(finalIdx,0,moved);
-  }
-  shopDragIdx=null;saveState();renderShopping();
+  if(shopMouseDragIdx===null||shopMouseDragIdx===i){shopMouseDragIdx=null;return;}
+  const moved=state.shoppingList.splice(shopMouseDragIdx,1)[0];
+  const finalIdx=Math.max(0,Math.min(state.shoppingList.length,shopMouseDragIdx<i?i-1:i));
+  state.shoppingList.splice(finalIdx,0,moved);
+  shopMouseDragIdx=null;saveState();renderShopping();
 }
-
-// Touch drag for mobile reorder
-let touchDragIdx=null,touchDragY=0,touchClone=null;
-function shopTouchDragStart(e,i){
-  e.preventDefault();touchDragIdx=i;touchDragY=e.touches[0].clientY;
-  const el=document.getElementById('shop-item-'+i);el.classList.add('dragging');
-}
-function shopTouchDragMove(e,i){
-  if(touchDragIdx===null)return;e.preventDefault();
-  const y=e.touches[0].clientY,dy=y-touchDragY;
-  const el=document.getElementById('shop-item-'+i);
-  el.style.transform=`translateY(${dy}px)`;
-}
-function shopTouchDragEnd(e,i){
-  if(touchDragIdx===null)return;
-  const el=document.getElementById('shop-item-'+i);
-  el.classList.remove('dragging');el.style.transform='';
-  const endY=e.changedTouches[0].clientY;
-  const dy=endY-touchDragY;const itemH=56;
-  let newIdx=i+Math.round(dy/itemH);
-  newIdx=Math.max(0,Math.min(state.shoppingList.length-1,newIdx));
-  if(newIdx!==i){
-    const moved=state.shoppingList.splice(i,1)[0];
-    state.shoppingList.splice(newIdx,0,moved);saveState();
-  }
-  touchDragIdx=null;renderShopping();
-}
-
 // Close swipe on tap elsewhere
 document.addEventListener('touchstart',e=>{
   if(shopSwiped!==null){
-    const t=e.target;if(!t.closest('.shop-delete-reveal')&&!t.closest('.shop-item'))closeShopSwipe(shopSwiped);
+    const t=e.target;
+    if(!t.closest('#shop-del-'+shopSwiped)&&!t.closest('#shop-item-'+shopSwiped)){
+      closeShopSwipe(shopSwiped);
+    }
   }
 },{passive:true});
 
