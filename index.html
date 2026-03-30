@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<meta name="apple-mobile-web-app-title" content="The Cauldron &amp; Spoon">
+<meta name="apple-mobile-web-app-title" content="Spoon &amp; Cauldron">
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
@@ -39,6 +39,7 @@ html,body{height:100%;overflow:hidden;}
 body{font-family:var(--font-body);background:var(--h2);color:var(--ink);font-size:14px;line-height:1.5;-webkit-font-smoothing:antialiased;}
 #app{max-width:430px;margin:0 auto;height:100vh;height:100dvh;display:flex;flex-direction:column;background:var(--parch);position:relative;overflow:hidden;}
 .screen{display:none;flex-direction:column;flex:1;overflow:hidden;animation:fadeIn .2s ease;}
+.screen-setup-layout{align-items:center;justify-content:center;padding:40px 24px;text-align:center;}
 .screen.active{display:flex;}
 @keyframes fadeIn{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:translateY(0)}}
 .screen-body{flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;padding-bottom:env(safe-area-inset-bottom,0px);}
@@ -47,7 +48,7 @@ body{font-family:var(--font-body);background:var(--h2);color:var(--ink);font-siz
 .search-bar{background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.2);border-radius:22px;padding:8px 14px;display:flex;align-items:center;gap:8px;cursor:pointer;}
 .search-bar input{background:none;border:none;outline:none;color:var(--tl);font-family:var(--font-body);font-size:13px;flex:1;width:100%;}
 .search-bar input::placeholder{color:var(--tm);}
-.bottom-nav{background:var(--card);border-top:1px solid var(--sand);display:flex;justify-content:space-around;padding:8px 0;padding-bottom:calc(8px + env(safe-area-inset-bottom,0px));flex-shrink:0;}
+.bottom-nav{background:var(--card);border-top:1px solid var(--sand);display:flex;justify-content:space-around;padding:10px 0;padding-bottom:calc(14px + env(safe-area-inset-bottom,0px));flex-shrink:0;}
 .nav-item{display:flex;flex-direction:column;align-items:center;gap:3px;cursor:pointer;padding:2px 12px;border-radius:10px;transition:opacity .15s;color:var(--inks);}
 .nav-item:active{opacity:.7;}
 .nav-label{font-family:var(--font-body);font-size:9px;color:var(--inks);letter-spacing:.3px;}
@@ -160,7 +161,7 @@ body{font-family:var(--font-body);background:var(--h2);color:var(--ink);font-siz
 .iter-dot.wiggling{animation:wiggle .3s infinite;}
 @keyframes wiggle{0%{transform:rotate(-8deg)}50%{transform:rotate(8deg)}100%{transform:rotate(-8deg)}}
 .iter-dot-x{position:absolute;top:-7px;right:-7px;width:16px;height:16px;border-radius:50%;background:var(--swipe-del);color:white;font-size:10px;display:flex;align-items:center;justify-content:center;z-index:3;cursor:pointer;}
-.mushroom-badge{position:absolute;top:-11px;right:-9px;width:20px;height:18px;pointer-events:none;}
+.mushroom-badge{position:absolute;top:-14px;right:-12px;width:30px;height:27px;pointer-events:none;}
 .iter-add{width:30px;height:30px;border-radius:50%;border:1.5px dashed rgba(255,255,255,.3);display:flex;align-items:center;justify-content:center;font-size:16px;color:rgba(255,255,255,.4);flex-shrink:0;cursor:pointer;}
 .iter-hint{font-family:var(--font-body);font-size:9px;color:#80b0a8;margin-left:auto;flex-shrink:0;cursor:pointer;}
 /* Recipe body */
@@ -255,6 +256,9 @@ body{font-family:var(--font-body);background:var(--h2);color:var(--ink);font-siz
 .shop-add-btn{background:var(--terd);border-radius:20px;padding:7px 14px;font-family:var(--font-body);font-size:12px;color:white;border:none;cursor:pointer;}
 .shop-hint{font-family:var(--font-body);font-size:9px;color:var(--tm);padding:6px 14px 2px;}
 .shop-item{display:flex;align-items:center;gap:9px;padding:9px 12px;background:var(--card);border-radius:10px;border:1px solid var(--sand);margin-bottom:6px;position:relative;overflow:hidden;transition:transform .2s ease;touch-action:pan-y;}
+.shop-group-header{border-color:var(--h);border-width:1.5px;background:var(--card);}
+.shop-child-item{margin-left:22px;border-left:3px solid var(--h);border-radius:0 10px 10px 0;margin-bottom:3px;}
+.shop-name-input{font-family:var(--font-body);font-size:13px;color:var(--ink);background:transparent;border:none;outline:none;flex:1;min-width:10px;padding:0;}
 .shop-item.dragging{opacity:.7;transform:scale(1.02);z-index:10;}
 .shop-item.drag-over{border-color:var(--h);border-style:dashed;}
 .shop-checkbox{width:18px;height:18px;border-radius:5px;border:1.5px solid var(--sandd);flex-shrink:0;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all .15s;}
@@ -357,34 +361,16 @@ body{font-family:var(--font-body);background:var(--h2);color:var(--ink);font-siz
 <body>
 <div id="app">
 
-<!-- SETUP SCREEN -->
-<div id="screen-setup" class="screen active">
-  <div class="top-header" style="padding-bottom:16px;">
-    <div class="app-title" id="setup-app-name">The Cauldron &amp; Spoon</div>
-  </div>
-  <div class="screen-body">
-    <div class="setup-screen">
-      <div class="setup-icon">🌿</div>
-      <div class="setup-title">Welcome to The Cauldron & Spoon</div>
-      <div class="setup-desc">Your personal recipe collection, beautifully organised. Connect Google Drive to keep your recipes safe and synced.</div>
-      <div class="setup-input-group">
-        <div class="setup-input-label">Google Client ID</div>
-        <input class="setup-input" id="client-id-input" placeholder="paste your Client ID here..."/>
-      </div>
-      <div class="setup-input-group">
-        <div class="setup-input-label">Google Client Secret</div>
-        <input class="setup-input" id="client-secret-input" type="password" placeholder="paste your Client Secret here..."/>
-      </div>
-      <button class="setup-btn" onclick="initGoogleDrive()" style="margin-top:8px;">Connect Google Drive</button>
-      <button style="background:none;border:none;color:var(--inks);font-family:var(--font-body);font-size:12px;margin-top:14px;cursor:pointer;text-decoration:underline;" onclick="skipSetup()">Skip for now (use local storage)</button>
-    </div>
-  </div>
+<div class="screen screen-setup-layout" id="screen-setup">
+  <div style="font-size:64px;margin-bottom:20px;">🌿</div>
+  <div style="font-family:var(--font-display);font-size:28px;color:var(--h);margin-bottom:12px;">The Spoon &amp; Cauldron</div>
+  <div style="font-family:var(--font-body);font-size:14px;color:var(--inks);margin-bottom:40px;line-height:1.6;">Your personal recipe collection,<br>beautifully organised.</div>
+  <button onclick="skipSetup()" style="background:var(--h);color:var(--cr);font-family:var(--font-body);font-size:15px;padding:14px 40px;border-radius:30px;border:none;cursor:pointer;width:100%;max-width:280px;">Get Started</button>
 </div>
 
-<!-- HOME SCREEN -->
 <div id="screen-home" class="screen">
   <div class="top-header">
-    <div class="app-title" id="home-app-name">The Cauldron &amp; Spoon</div>
+    <div class="app-title" id="home-app-name">The Spoon &amp; Cauldron</div>
     <div class="search-bar" onclick="showScreen('search')">
       <svg width="14" height="14" viewBox="0 0 14 14" fill="none" style="color:var(--tm);flex-shrink:0;">
         <circle cx="6" cy="6" r="4.5" stroke="currentColor" stroke-width="1.5"/>
@@ -395,7 +381,7 @@ body{font-family:var(--font-body);background:var(--h2);color:var(--ink);font-siz
   </div>
   <div class="screen-body">
     <div class="pinned-section hidden" id="pinned-section">
-      <div class="section-title">♥ pinned favorites</div>
+      <div class="section-title"><svg width="11" height="10" viewBox="0 0 24 22" fill="var(--inks)" style="vertical-align:middle;margin-right:4px;"><path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.27 2 8.5 2 5.41 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.41 22 8.5c0 3.77-3.4 6.86-8.55 11.54L12 21.35z"/></svg>pinned favorites</div>
       <div class="pinned-scroll" id="pinned-scroll"></div>
     </div>
     <div class="tag-filter-bar" id="tag-filter-bar"></div>
@@ -438,10 +424,11 @@ body{font-family:var(--font-body);background:var(--h2);color:var(--ink);font-siz
         <span class="iter-date" id="iter-date">—</span>
         <div class="iter-actions">
           <button class="action-btn default-btn" onclick="setDefaultIteration()">
-            <svg width="11" height="10" viewBox="0 0 64 58" fill="none"><path d="M36 30 Q36 19 46 18 Q56 19 56 30 Q51 34 46 34 Q41 34 36 30Z" fill="#7a4e10"/><rect x="43" y="34" width="5" height="12" rx="2.5" fill="#a07018"/><path d="M4 30 Q4 14 20 12 Q36 14 36 30 Q29 35 20 35 Q11 35 4 30Z" fill="#CC8D1A"/><circle cx="10" cy="22" r="3" fill="#f5e080" opacity=".6"/><rect x="17" y="35" width="6" height="14" rx="3" fill="#f5e070"/></svg>
+            <svg width="22" height="20" viewBox="0 0 64 58" fill="none"><path d="M36 30 Q36 19 46 18 Q56 19 56 30 Q51 34 46 34 Q41 34 36 30Z" fill="#7a4e10"/><rect x="43" y="34" width="5" height="12" rx="2.5" fill="#a07018"/><path d="M4 30 Q4 14 20 12 Q36 14 36 30 Q29 35 20 35 Q11 35 4 30Z" fill="#CC8D1A"/><circle cx="10" cy="22" r="3" fill="#f5e080" opacity=".6"/><rect x="17" y="35" width="6" height="14" rx="3" fill="#f5e070"/></svg>
             set default
           </button>
           <button class="action-btn" onclick="duplicateIteration()">duplicate</button>
+          <button class="action-btn" onclick="editCurrentRecipe()">edit</button>
 
         </div>
       </div>
@@ -449,7 +436,7 @@ body{font-family:var(--font-body);background:var(--h2);color:var(--ink);font-siz
         <div class="section-header">ingredients</div>
         <div id="ingredients-list"></div>
         <button class="add-ingredient-btn" onclick="openAddIngredient()">+ add ingredient</button>
-        <div class="swipe-hint">← swipe ingredient to add to shopping list</div>
+        <div class="swipe-hint">hold any ingredient to add to shopping list</div>
       </div>
       <div class="recipe-section" id="custom-fields-section">
         <div class="section-header">custom fields</div>
@@ -499,6 +486,8 @@ body{font-family:var(--font-body);background:var(--h2);color:var(--ink);font-siz
       <input class="field-input" id="edit-name" placeholder="enter recipe name..."/>
       <div class="field-label">tags <span style="color:var(--inks);text-transform:none;font-size:9px;">(choose at least 1)</span></div>
       <div class="tags-row" id="edit-tags-row"><button class="tag-add-btn" onclick="openAddTag()">+ add tag</button></div>
+      <div class="field-label">iteration date</div>
+      <input class="field-input" type="date" id="edit-iter-date" style="color:var(--ink);background:var(--card);border:1px solid var(--sand);border-radius:10px;padding:8px 12px;"/>
       <div class="field-label">ingredients</div>
       <div id="edit-ingredients-list"></div>
       <button class="add-ingredient-btn" onclick="addEditIngredient()">+ add ingredient</button>
@@ -522,7 +511,7 @@ body{font-family:var(--font-body);background:var(--h2);color:var(--ink);font-siz
     </div>
   </div>
   <div class="screen-body">
-    <div class="shop-hint">← swipe to delete · drag ⠿ to reorder · tap ↦ to group under item above</div>
+    <div class="shop-hint">long press item for options · drag ⠿ to reorder</div>
     <div style="padding:6px 14px 14px;" id="shop-list"></div>
   </div>
   <div class="bottom-nav">
@@ -709,7 +698,7 @@ body{font-family:var(--font-body);background:var(--h2);color:var(--ink);font-siz
   <div class="modal-sheet">
     <div class="modal-handle"></div>
     <div class="modal-title">Rename Library</div>
-    <input class="field-input" id="rename-input" placeholder="The Cauldron & Spoon"/>
+    <input class="field-input" id="rename-input" placeholder="The Spoon & Cauldron"/>
     <button class="save-btn" onclick="confirmRename()" style="width:100%;border-radius:12px;padding:10px;margin-top:14px;">save</button>
   </div>
 </div>
@@ -751,6 +740,16 @@ body{font-family:var(--font-body);background:var(--h2);color:var(--ink);font-siz
   <img id="lightbox-img" src="" alt=""/>
 </div>
 
+<!-- Shopping list action menu -->
+<div class="modal-overlay" id="modal-shop-action">
+  <div class="modal-sheet">
+    <div class="modal-handle"></div>
+    <div class="modal-title" id="shop-action-menu-title">Options</div>
+    <div id="shop-action-menu-btns"></div>
+    <button onclick="closeModal('modal-shop-action')" style="width:100%;padding:10px;background:none;border:none;font-family:var(--font-body);font-size:13px;color:var(--inks);cursor:pointer;margin-top:6px;">cancel</button>
+  </div>
+</div>
+
 <!-- Text expand popup -->
 <div class="modal-overlay" id="modal-text-expand">
   <div class="modal-sheet">
@@ -787,7 +786,7 @@ body{font-family:var(--font-body);background:var(--h2);color:var(--ink);font-siz
 // STATE
 // ═══════════════════════════════
 let state = {
-  libraryName:'The Cauldron & Spoon', theme:'cauldron',
+  libraryName:'The Spoon & Cauldron', theme:'cauldron',
   recipes:[], shoppingList:[],
   allTags:['ninja creami','dessert','dinner','snack','breakfast','condiment','cleaning supply'],
   savedIngredients:['greek yogurt','lemon juice','lemon zest','honey','sea salt','protein powder','blueberries','vanilla extract','almond milk','coconut milk'],
@@ -797,7 +796,7 @@ let state = {
 };
 let currentRecipeId=null, currentIterIdx=0;
 let editingRecipeId=null, editIngredients=[], editCustomFields=[], editTags=[];
-let editCoverType='emoji', editCoverValue='🫙', editCoverPhotoData=null;
+let editCoverType='emoji', editCoverValue='🪩', editCoverPhotoData=null;
 let selectedCfType='text', selectedUnit='cup', amountPickerTarget=null;
 let wiggleMode=false, wiggleTimer=null;
 let undoStack=null, undoTimer=null;
@@ -810,22 +809,90 @@ const UNITS=['tsp','tbsp','cup','fl oz','oz','g','kg','ml','l','lb','pinch','pie
 // ═══════════════════════════════
 // PERSISTENCE
 // ═══════════════════════════════
-function saveState(){try{localStorage.setItem('cauldron_v2',JSON.stringify(state));}catch(e){}}
+const SUPA_URL='https://pbfghfzihrcuiyzehuwi.supabase.co';
+const SUPA_KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBiZmdoZnppaHJjdWl5emVodXdpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQ4NDQ0MTMsImV4cCI6MjA5MDQyMDQxM30.zVAcA9ktLTzsGrW9vuvEmsJundk9UYBioC0OKoDd0h0';
+const SUPA_HDR={'Content-Type':'application/json','apikey':SUPA_KEY,'Authorization':'Bearer '+SUPA_KEY};
+
+async function supaUpsert(table,id,data){
+  try{
+    // Try PATCH first (update existing row)
+    const r=await fetch(SUPA_URL+'/rest/v1/'+table+'?id=eq.'+id,{
+      method:'PATCH',headers:{...SUPA_HDR,'Prefer':'return=minimal'},
+      body:JSON.stringify({data})
+    });
+    // If no rows matched, POST to insert
+    if(r.status===204||r.ok)return;
+    await fetch(SUPA_URL+'/rest/v1/'+table,{
+      method:'POST',headers:{...SUPA_HDR,'Prefer':'return=minimal'},
+      body:JSON.stringify({id,data})
+    });
+  }catch(e){console.warn('Supabase upsert error:',e);}
+}
+
+async function supaGet(table,id){
+  try{
+    const r=await fetch(SUPA_URL+'/rest/v1/'+table+'?id=eq.'+id+'&select=data',
+      {headers:{'apikey':SUPA_KEY,'Authorization':'Bearer '+SUPA_KEY}});
+    const rows=await r.json();
+    return rows&&rows.length>0?rows[0].data:null;
+  }catch(e){return null;}
+}
+
+let _supaTimer=null;
+function scheduleSupaSave(){
+  clearTimeout(_supaTimer);
+  _supaTimer=setTimeout(async()=>{
+    const recipes=JSON.stringify(state.recipes);
+    const shop=JSON.stringify(state.shoppingList);
+    const settings=JSON.stringify({theme:state.theme,libraryName:state.libraryName,
+      units:state.units,sortOrder:state.sortOrder,allTags:state.allTags,
+      savedIngredients:state.savedIngredients});
+    await supaUpsert('recipes','default',recipes);
+    await supaUpsert('shopping_list','default',shop);
+    await supaUpsert('app_settings','singleton',settings);
+  },800);
+}
+
+function saveState(){
+  try{localStorage.setItem('cauldron_v2',JSON.stringify(state));}catch(e){}
+  scheduleSupaSave();
+}
 function loadState(){
   try{
-    // Try v2 key first
     const s2=localStorage.getItem('cauldron_v2');
     if(s2){const p=JSON.parse(s2);state={...state,...p};return;}
-    // Fall back to v1 key and migrate
     const s1=localStorage.getItem('cauldron_state');
-    if(s1){
-      const p=JSON.parse(s1);
-      state={...state,...p};
-      // Save under new key so v1 key is no longer needed
-      saveState();
-      console.log('Migrated data from v1 to v2');
+    if(s1){const p=JSON.parse(s1);state={...state,...p};saveState();}
+  }catch(e){}
+}
+
+async function loadFromSupabase(){
+  try{
+    const r=await supaGet('recipes','default');
+    if(r){const p=typeof r==='string'?JSON.parse(r):r;if(Array.isArray(p)&&p.length>0)state.recipes=p;}
+  }catch(e){}
+  try{
+    const s=await supaGet('shopping_list','default');
+    if(s){const p=typeof s==='string'?JSON.parse(s):s;if(Array.isArray(p))state.shoppingList=p;}
+  }catch(e){}
+  try{
+    const cfg=await supaGet('app_settings','singleton');
+    if(cfg){
+      const p=typeof cfg==='string'?JSON.parse(cfg):cfg;
+      if(p&&typeof p==='object'){
+        if(p.theme)state.theme=p.theme;
+        if(p.libraryName)state.libraryName=p.libraryName;
+        if(p.units)state.units=p.units;
+        if(p.sortOrder)state.sortOrder=p.sortOrder;
+        if(p.allTags)state.allTags=p.allTags;
+        if(p.savedIngredients)state.savedIngredients=p.savedIngredients;
+      }
     }
   }catch(e){}
+  try{localStorage.setItem('cauldron_v2',JSON.stringify(state));}catch(e){}
+  applyTheme();
+  renderHome();
+  renderShopping();
 }
 
 // ═══════════════════════════════
@@ -853,13 +920,13 @@ function initGoogleDrive(){
   saveState();showToast('Google Drive connected!');
   setTimeout(()=>showScreen('home'),800);
 }
-function skipSetup(){saveState();showScreen('home');}
+function skipSetup(){state.setupDone=true;saveState();showScreen('home');}
 
 // ═══════════════════════════════
 // HOME
 // ═══════════════════════════════
 function renderHome(){
-  const name=state.libraryName||'The Cauldron & Spoon';
+  const name=state.libraryName||'The Spoon & Cauldron';
   document.getElementById('home-app-name').textContent=name;
   document.title=name;
   // Pinned
@@ -872,7 +939,7 @@ function renderHome(){
       <div class="pin-card" onclick="openRecipe('${r.id}')">
         <div class="pin-card-img" style="background:${r.coverBg||'var(--tagbg)'};position:relative;overflow:hidden;">
           ${r.coverType==='photo'&&r.coverPhoto?`<img src="${r.coverPhoto}" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover;z-index:0;"/>`:''}
-          <span style="position:relative;z-index:1;font-size:22px;">${r.coverType==='photo'&&r.coverPhoto?'':(r.coverEmoji||'🫙')}</span>
+          <span style="position:relative;z-index:1;font-size:22px;">${r.coverType==='photo'&&r.coverPhoto?'':(r.coverEmoji||'🪩')}</span>
         </div>
         <div class="pin-card-body"><div class="pin-card-name">${r.name}</div><div class="pin-card-tag">${(r.tags||[])[0]||''}</div></div>
       </div>`).join('');
@@ -881,7 +948,7 @@ function renderHome(){
   const af=state.activeFilters||[];
   document.getElementById('tag-filter-bar').innerHTML=
     `<div class="tag ${af.length===0?'active-teal':''}" onclick="setFilter('all')">all</div>`+
-    state.allTags.map(t=>`<div class="tag ${af.includes(t)?'active-terra':''}" onclick="toggleFilter('${t}')">${t}</div>`).join('');
+    [...state.allTags].sort((a,b)=>a.localeCompare(b)).map(t=>`<div class="tag ${af.includes(t)?'active-terra':''}" onclick="toggleFilter('${t}')">${t}</div>`).join('');
   // Recipes
   let recipes=[...state.recipes];
   if(af.length>0)recipes=recipes.filter(r=>af.every(f=>(r.tags||[]).includes(f)));
@@ -902,7 +969,7 @@ function renderHome(){
         ontouchend="cardTouchEnd(event)"
         ontouchmove="cardTouchMove(event)">
         <div class="recipe-card-cover" style="background:${r.coverBg||'var(--tagbg)'}">
-          ${r.coverType==='photo'&&r.coverPhoto?`<img src="${r.coverPhoto}"/>`:`<span>${r.coverEmoji||'🫙'}</span>`}
+          ${r.coverType==='photo'&&r.coverPhoto?`<img src="${r.coverPhoto}"/>`:`<span>${r.coverEmoji||'🪩'}</span>`}
           ${r.favorited?'<div class="recipe-card-fav"><svg width="14" height="13" viewBox="0 0 24 22" fill="rgba(255,255,255,0.95)"><path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.27 2 8.5 2 5.41 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.41 22 8.5c0 3.77-3.4 6.86-8.55 11.54L12 21.35z"/></svg></div>':''}
         </div>
         <div class="recipe-card-body">
@@ -982,7 +1049,7 @@ function confirmDuplicateRecipe(){
   editIngredients=JSON.parse(JSON.stringify(iter.ingredients||[]));
   editCustomFields=JSON.parse(JSON.stringify(iter.customFields||[]));
   editTags=[...(copy.tags||[])];
-  editCoverType=copy.coverType||'emoji';editCoverValue=copy.coverEmoji||'🫙';editCoverPhotoData=copy.coverPhoto||null;
+  editCoverType=copy.coverType||'emoji';editCoverValue=copy.coverEmoji||'🪩';editCoverPhotoData=copy.coverPhoto||null;
   document.getElementById('edit-screen-title').textContent='edit recipe';
   document.getElementById('edit-name').value=copy.name;
   document.getElementById('edit-notes').value=iter.notes||'';
@@ -1013,7 +1080,7 @@ function renderRecipeDetail(r){
     if(!existImg){existImg=document.createElement('img');existImg.className='hero-photo';existImg.style.cssText='position:absolute;inset:0;width:100%;height:100%;object-fit:cover;';hero.insertBefore(existImg,hero.firstChild);}
     existImg.src=r.coverPhoto;
   } else {
-    emojiEl.style.display='';emojiEl.textContent=r.coverEmoji||'🫙';
+    emojiEl.style.display='';emojiEl.textContent=r.coverEmoji||'🪩';
     if(existImg)existImg.remove();
   }
   hero.style.background=r.coverBg||'var(--tagbg)';
@@ -1085,9 +1152,9 @@ function renderIteration(r,idx){
   } else {
     ingList.innerHTML=iter.ingredients.map((ing,i)=>`
       <div class="ingredient-row" id="ing-row-${i}" draggable="true"
-        ondragstart="ingDragStart(event,${i})" ondragover="ingDragOver(event,${i})" ondrop="ingDrop(event,${i})">
-        <span class="ing-drag-handle" ontouchstart="ingTouchStart(event,${i})" ontouchmove="ingTouchMove(event,${i})" ontouchend="ingTouchEnd(event,${i})">⠿</span>
-        <span class="ing-swipe-trigger" style="position:absolute;inset:0;z-index:-1;" ontouchstart="ingSwipeStart(event,${i})" ontouchend="ingSwipeEnd(event,${i})"></span>
+        ondragstart="ingDragStart(event,${i})" ondragover="ingDragOver(event,${i})" ondrop="ingDrop(event,${i})"
+        ontouchstart="ingHoldStart(event,${i})" ontouchmove="ingHoldMove(event,${i})" ontouchend="ingHoldEnd(event,${i})">
+        <span class="ing-drag-handle" ontouchstart="ingTouchStart(event,${i})" ontouchmove="ingTouchMove(event,${i})" ontouchend="ingTouchEnd(event,${i})" onclick="event.stopPropagation()">⠿</span>
         <span class="amt-pill">${ing.amount} ${ing.unit&&ing.unit!=='—'?ing.unit:''}</span>
         <span class="ing-name">${ing.name}</span>
         <div class="ing-swipe-action" id="ing-action-${i}" style="display:none;" onclick="addIngToShopping(${i})">
@@ -1306,23 +1373,46 @@ function cfTouchEnd(e,i){
 }
 // Swipe ingredient to shopping
 let swipeStartX=0;
-function ingSwipeStart(e,i){swipeStartX=e.touches[0].clientX;}
-function ingSwipeEnd(e,i){
-  const dx=e.changedTouches[0].clientX-swipeStartX;
-  if(dx<-40){
-    const row=document.getElementById('ing-row-'+i);
+// Long-hold ingredient to reveal cauldron add-to-shopping button
+let ingHoldTimer=null,ingHoldStartX=0,ingHoldStartY=0;
+function ingHoldStart(e,i){
+  if(e.target.classList.contains('ing-drag-handle'))return;
+  ingHoldStartX=e.touches[0].clientX;
+  ingHoldStartY=e.touches[0].clientY;
+  ingHoldTimer=setTimeout(()=>{
     const action=document.getElementById('ing-action-'+i);
-    row.classList.add('swiping');action.style.display='flex';
-    setTimeout(()=>{row.classList.remove('swiping');action.style.display='none';},2500);
-  }
+    if(action){action.style.display='flex';}
+    setTimeout(()=>{const a=document.getElementById('ing-action-'+i);if(a)a.style.display='none';},3000);
+  },600);
 }
+function ingHoldMove(e,i){
+  if(Math.abs(e.touches[0].clientX-ingHoldStartX)>10||Math.abs(e.touches[0].clientY-ingHoldStartY)>10)
+    clearTimeout(ingHoldTimer);
+}
+function ingHoldEnd(e,i){clearTimeout(ingHoldTimer);}
 function addIngToShopping(idx){
   const r=state.recipes.find(x=>x.id===currentRecipeId);if(!r)return;
-  const ing=r.iterations[currentIterIdx].ingredients[idx];
-  state.shoppingList.push({id:'item_'+Date.now()+'_'+Math.random().toString(36).slice(2),name:ing.name,amount:`${ing.amount} ${ing.unit&&ing.unit!=='—'?ing.unit:''}`.trim(),checked:false});
-  saveState();showToast(`${ing.name} added to shopping list`);
-  const row=document.getElementById('ing-row-'+idx);
-  if(row){row.classList.remove('swiping');const a=document.getElementById('ing-action-'+idx);if(a)a.style.display='none';}
+  const ing=r.iterations[currentIterIdx].ingredients[idx];if(!ing)return;
+  const recipeName=r.name;
+  // Find or create group header for this recipe
+  let group=state.shoppingList.find(x=>x.isGroupHeader&&x.name===recipeName);
+  if(!group){
+    group={id:'grp_'+Date.now()+'_'+Math.random().toString(36).slice(2),
+      name:recipeName,isGroupHeader:true,checked:false,amount:''};
+    state.shoppingList.push(group);
+  }
+  const newItem={id:'item_'+Date.now()+'_'+Math.random().toString(36).slice(2),
+    name:ing.name,
+    amount:(ing.amount+' '+(ing.unit&&ing.unit!=='—'?ing.unit:'')).trim(),
+    checked:false,parentGroup:group.id};
+  // Insert after last child of this group
+  const gIdx=state.shoppingList.findIndex(x=>x.id===group.id);
+  let insertAt=gIdx+1;
+  while(insertAt<state.shoppingList.length&&state.shoppingList[insertAt].parentGroup===group.id)insertAt++;
+  state.shoppingList.splice(insertAt,0,newItem);
+  saveState();renderShopping();
+  showToast(ing.name+' added to shopping list');
+  const a=document.getElementById('ing-action-'+idx);if(a)a.style.display='none';
 }
 
 function switchIteration(idx){
@@ -1345,7 +1435,8 @@ function setDefaultIteration(){
 function duplicateIteration(){
   const r=state.recipes.find(x=>x.id===currentRecipeId);if(!r)return;
   const iter=JSON.parse(JSON.stringify(r.iterations[currentIterIdx]));
-  iter.createdAt=Date.now();r.iterations.push(iter);r.updatedAt=Date.now();
+  // Keep original createdAt — don't overwrite with today
+  r.iterations.push(iter);r.updatedAt=Date.now();
   currentIterIdx=r.iterations.length-1;saveState();renderIterBar(r);renderIteration(r,currentIterIdx);
   showToast('Iteration duplicated');
 }
@@ -1420,8 +1511,11 @@ document.getElementById('lightbox').addEventListener('touchend',e=>{if(e.touches
 // ═══════════════════════════════
 function startNewRecipe(){
   editingRecipeId=null;editIngredients=[];editCustomFields=[];editTags=[];
-  editCoverType='emoji';editCoverValue='🫙';editCoverPhotoData=null;
+  editCoverType='emoji';editCoverValue='🪩';editCoverPhotoData=null;
   document.getElementById('edit-screen-title').textContent='new recipe';
+  // Use local date for new recipe default
+  const _nd=new Date();
+  document.getElementById('edit-iter-date').value=_nd.getFullYear()+'-'+String(_nd.getMonth()+1).padStart(2,'0')+'-'+String(_nd.getDate()).padStart(2,'0');
   document.getElementById('edit-name').value='';
   document.getElementById('edit-notes').value='';
   document.getElementById('cover-hint-text').textContent='tap to add a cover';
@@ -1435,11 +1529,16 @@ function editCurrentRecipe(){
   editIngredients=JSON.parse(JSON.stringify(iter.ingredients||[]));
   editCustomFields=JSON.parse(JSON.stringify(iter.customFields||[]));
   editTags=[...(r.tags||[])];
-  editCoverType=r.coverType||'emoji';editCoverValue=r.coverEmoji||'🫙';editCoverPhotoData=r.coverPhoto||null;
+  editCoverType=r.coverType||'emoji';editCoverValue=r.coverEmoji||'🪩';editCoverPhotoData=r.coverPhoto||null;
   document.getElementById('edit-screen-title').textContent='edit recipe';
   document.getElementById('edit-name').value=r.name;
   document.getElementById('edit-notes').value=iter.notes||'';
   document.getElementById('cover-hint-text').textContent='tap to change cover';
+  // Set iteration date as local date string
+  const _ets=iter.createdAt||Date.now();
+  const _ed=new Date(_ets);
+  const _edStr=_ed.getFullYear()+'-'+String(_ed.getMonth()+1).padStart(2,'0')+'-'+String(_ed.getDate()).padStart(2,'0');
+  document.getElementById('edit-iter-date').value=_edStr;
   renderEditIngredients();renderEditCFs();renderEditTags();
   showScreen('edit');
 }
@@ -1449,7 +1548,11 @@ function saveRecipe(){
   if(!name){showToast('Please enter a recipe name');return;}
   if(editTags.length===0){showToast('Please add at least one tag');return;}
   const notes=document.getElementById('edit-notes').value.trim();
-  const iter={createdAt:Date.now(),ingredients:editIngredients,customFields:editCustomFields,notes,attachments:[]};
+  const _dateVal=document.getElementById('edit-iter-date').value;
+  // Parse date as LOCAL noon to avoid UTC timezone offset issues
+  let _iterTs=Date.now();
+  if(_dateVal){const [_y,_m,_d]=_dateVal.split('-').map(Number);_iterTs=new Date(_y,_m-1,_d,12,0,0).getTime();}
+  const iter={createdAt:_iterTs,ingredients:editIngredients,customFields:editCustomFields,notes,attachments:[]};
   if(editingRecipeId){
     const r=state.recipes.find(x=>x.id===editingRecipeId);
     if(r){
@@ -1457,12 +1560,12 @@ function saveRecipe(){
       if(editCoverType==='emoji')r.coverEmoji=editCoverValue;
       if(editCoverType==='photo'&&editCoverPhotoData)r.coverPhoto=editCoverPhotoData;
       r.updatedAt=Date.now();
-      r.iterations[currentIterIdx]={...r.iterations[currentIterIdx],...iter,createdAt:r.iterations[currentIterIdx].createdAt};
+      r.iterations[currentIterIdx]={...r.iterations[currentIterIdx],...iter,createdAt:_iterTs};
       saveState();showToast('Recipe saved');renderRecipeDetail(r);showScreen('recipe');
     }
   } else {
     const nr={id:Date.now()+'',name,tags:editTags,coverType:editCoverType,
-      coverEmoji:editCoverType==='emoji'?editCoverValue:'🫙',
+      coverEmoji:editCoverType==='emoji'?editCoverValue:'🪩',
       coverPhoto:editCoverType==='photo'?editCoverPhotoData:null,
       coverBg:'var(--tagbg)',favorited:false,defaultIteration:0,
       iterations:[iter],createdAt:Date.now(),updatedAt:Date.now()};
@@ -1635,44 +1738,227 @@ function confirmAddCf(){
 // SHOPPING LIST
 // ═══════════════════════════════
 function renderShopping(){
-  const list=state.shoppingList;
-  const total=list.length,checked=list.filter(i=>i.checked).length;
-  document.getElementById('shop-subtitle').textContent=`${total} item${total!==1?'s':''} · ${checked} checked`;
-  const el=document.getElementById('shop-list');
-  if(list.length===0){el.innerHTML=`<div class="empty-state"><div class="empty-icon">🛒</div><div class="empty-title">List is empty</div><div class="empty-desc">Add items above or swipe ingredients from a recipe</div></div>`;return;}
-  el.innerHTML=list.map((item,i)=>{
-    const isChild=!!item.parentGroup;
+  const el=document.getElementById('shop-list');if(!el)return;
+  const list=state.shoppingList||[];
+  const total=list.length,checked=list.filter(x=>x.checked).length;
+  document.getElementById('shop-count').textContent=total+' item'+(total!==1?'s':'')+' · '+checked+' checked';
+  if(!window.shopCollapsed)window.shopCollapsed={};
+  if(total===0){
+    el.innerHTML='<div style="text-align:center;color:var(--inks);padding:40px 20px;font-family:var(--font-display);font-style:italic;">your list is empty</div>';
+    return;
+  }
+  let html='';
+  const delSvg='<svg width="18" height="18" viewBox="0 0 24 24" fill="none"><polyline points="3 6 5 6 21 6" stroke="white" stroke-width="1.8" stroke-linecap="round"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6" stroke="white" stroke-width="1.8" stroke-linecap="round"/><path d="M10 11v6M14 11v6" stroke="white" stroke-width="1.8" stroke-linecap="round"/></svg>';
+  const chkSvg='<svg width="10" height="8" viewBox="0 0 10 8"><polyline points="1,4 4,7 9,1" stroke="white" stroke-width="1.8" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+  const dragH='<span class="shop-drag" ontouchstart="shopDragHandleStart(event,IDX)" ontouchmove="shopDragHandleMove(event,IDX)" ontouchend="shopDragHandleEnd(event,IDX)">&#8942;</span>';
+
+  let i=0;
+  while(i<list.length){
+    const item=list[i];
+    if(!item){i++;continue;}
     const isHeader=!!item.isGroupHeader;
-    const canIndent=!isChild&&i>0;
-    return `<div class="shop-item ${item.checked?'completed':''}" id="shop-item-${i}"
-      ontouchstart="shopTouchStart(event,${i})"
-      ontouchmove="shopTouchMove(event,${i})"
-      ontouchend="shopTouchEnd(event,${i})"
-      style="${isChild?'margin-left:26px;border-left:3px solid var(--h);border-radius:0 10px 10px 0;margin-bottom:3px;padding-left:10px;':''}${isHeader?'border-color:var(--h);border-width:1.5px;':''}">
-      <div class="shop-checkbox ${item.checked?'checked':''}" onclick="toggleShopItem(${i})">
-        ${item.checked?`<svg width="10" height="8" viewBox="0 0 10 8"><polyline points="1,4 4,7 9,1" stroke="white" stroke-width="1.8" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>`:''}
-      </div>
-      <span class="shop-item-name"
-        contenteditable="true"
-        data-idx="${i}"
-        onblur="saveShopItemName(this)"
-        onkeydown="if(event.key==='Enter'){event.preventDefault();this.blur();}"
-        onclick="event.stopPropagation()"
-        style="outline:none;min-width:10px;flex:1;">
-        ${item.name}
-      </span>
-      ${item.amount?`<span class="shop-item-amt">${item.amount}</span>`:''}
-      <div style="display:flex;align-items:center;gap:4px;flex-shrink:0;">
-        ${isChild?`<span style="font-family:var(--font-body);font-size:10px;color:var(--tm);cursor:pointer;padding:2px 5px;border:1px solid var(--sand);border-radius:8px;" onclick="ungroupItem(${i})">↤</span>`:''}
-        ${canIndent?`<span style="font-family:var(--font-body);font-size:10px;color:var(--tm);cursor:pointer;padding:2px 5px;border:1px solid var(--sand);border-radius:8px;" onclick="indentItem(${i})">↦</span>`:''}
-        <span class="shop-drag" style="touch-action:none;padding:4px 6px;cursor:grab;">⠿</span>
-      </div>
-      <div class="shop-delete-reveal" id="shop-del-${i}" style="display:none;" onclick="deleteShopItem(${i})">
-        <svg width="20" height="20" viewBox="0 0 24 24" fill="none"><polyline points="3 6 5 6 21 6" stroke="white" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6" stroke="white" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/><path d="M10 11v6M14 11v6" stroke="white" stroke-width="1.8" stroke-linecap="round"/><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2" stroke="white" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
-      </div>
-    </div>`;}).join('')+
-    (checked>0?`<button class="clear-completed-btn" onclick="clearCompleted()">clear completed (${checked})</button>`:'');
+    const isChild=!!item.parentGroup;
+
+    if(isHeader){
+      let childCount=0,j=i+1;
+      while(j<list.length&&list[j].parentGroup===item.id){childCount++;j++;}
+      const collapsed=window.shopCollapsed[item.id];
+      const drag=dragH.replace(/IDX/g,i);
+      html+='<div class="shop-item shop-group-header" id="shop-item-'+i+'" ontouchstart="shopTouchStart(event,'+i+')" ontouchmove="shopTouchMove(event,'+i+')" ontouchend="shopTouchEnd(event,'+i+')">';
+      html+='<div class="shop-checkbox'+(item.checked?' checked':'')+'" onclick="toggleShopItem('+i+')">'+(item.checked?chkSvg:'')+'</div>';
+      html+='<span style="font-weight:600;flex:1;font-family:var(--font-body);font-size:13px;color:var(--ink);cursor:pointer;" onclick="toggleShopGroup(\'' + item.id + '\')">'+item.name+'</span>';
+      html+='<span style="font-family:var(--font-body);font-size:10px;color:var(--inks);margin-right:4px;">'+childCount+' item'+(childCount!==1?'s':'')+'</span>';
+      html+='<span style="font-size:14px;color:var(--inks);margin-right:4px;cursor:pointer;" onclick="toggleShopGroup(\'' + item.id + '\')">'+( collapsed?'›':'⌄' )+'</span>';
+      html+=drag;
+      html+='<div class="shop-delete-reveal" id="shop-del-'+i+'" style="display:none;" onclick="deleteShopItem('+i+')">'+delSvg+'</div>';
+      html+='</div>';
+      i++;
+      if(!collapsed){
+        while(i<list.length&&list[i].parentGroup===item.id){
+          const ci=i,child=list[ci];
+          const cdrag=dragH.replace(/IDX/g,ci);
+          html+='<div class="shop-item shop-child-item" id="shop-item-'+ci+'" ontouchstart="shopTouchStart(event,'+ci+')" ontouchmove="shopTouchMove(event,'+ci+')" ontouchend="shopTouchEnd(event,'+ci+')">';
+          html+='<div class="shop-checkbox'+(child.checked?' checked':'')+'" onclick="toggleShopItem('+ci+')">'+(child.checked?chkSvg:'')+'</div>';
+          html+='<input class="shop-name-input" data-idx="'+ci+'" value="'+child.name.replace(/"/g,'&quot;')+'" onblur="saveShopItemName(this,'+ci+')" onkeydown="shopInputKey(event)"/>';
+          if(child.amount)html+='<span class="shop-item-amt">'+child.amount+'</span>';
+          html+='<div class="shop-delete-reveal" id="shop-del-'+ci+'" style="display:none;" onclick="deleteShopItem('+ci+')">'+delSvg+'</div>';
+          html+='</div>';
+          i++;
+        }
+      } else {
+        while(i<list.length&&list[i].parentGroup===item.id)i++;
+      }
+    } else {
+      const drag=dragH.replace(/IDX/g,i);
+      html+='<div class="shop-item" id="shop-item-'+i+'" ontouchstart="shopTouchStart(event,'+i+')" ontouchmove="shopTouchMove(event,'+i+')" ontouchend="shopTouchEnd(event,'+i+')">';
+      html+='<div class="shop-checkbox'+(item.checked?' checked':'')+'" onclick="toggleShopItem('+i+')">'+(item.checked?chkSvg:'')+'</div>';
+      html+='<input class="shop-name-input" data-idx="'+i+'" value="'+item.name.replace(/"/g,'&quot;')+'" onblur="saveShopItemName(this,'+i+')" onkeydown="shopInputKey(event)"/>';
+      if(item.amount)html+='<span class="shop-item-amt">'+item.amount+'</span>';
+      html+=drag;
+      html+='<div class="shop-delete-reveal" id="shop-del-'+i+'" style="display:none;" onclick="deleteShopItem('+i+')">'+delSvg+'</div>';
+      html+='</div>';
+      i++;
+    }
+  }
+  html+='<div style="height:20px;"></div>';
+  el.innerHTML=html+(checked>0?'<button class="clear-completed-btn" onclick="clearCompleted()">clear completed ('+checked+')</button>':'');
 }
+
+
+// ── Shopping list interactions ────────────────────────────────────────────────
+// Touch: long press = action menu, drag handle = reorder
+let _shopLPTimer=null,_shopLPIdx=null;
+let _shopDragIdx=null,_shopDragStartY=0,_shopDragEl=null;
+
+function shopTouchStart(e,i){
+  _shopLPTimer=setTimeout(()=>openShopActionMenu(i),600);
+}
+function shopTouchMove(e,i){clearTimeout(_shopLPTimer);}
+function shopTouchEnd(e,i){clearTimeout(_shopLPTimer);}
+
+function shopDragHandleStart(e,i){
+  e.stopPropagation();clearTimeout(_shopLPTimer);
+  _shopDragIdx=i;_shopDragStartY=e.touches[0].clientY;
+  _shopDragEl=document.getElementById('shop-item-'+i);
+  if(_shopDragEl){_shopDragEl.style.opacity='0.5';}
+}
+function shopDragHandleMove(e,i){
+  if(_shopDragIdx===null)return;
+  e.preventDefault();
+  const dy=e.touches[0].clientY-_shopDragStartY;
+  if(_shopDragEl)_shopDragEl.style.transform='translateY('+dy+'px)';
+}
+function shopDragHandleEnd(e,i){
+  if(_shopDragIdx===null)return;
+  if(_shopDragEl){_shopDragEl.style.opacity='';_shopDragEl.style.transform='';}
+  const dy=e.changedTouches[0].clientY-_shopDragStartY;
+  const rowH=56;
+  const item=state.shoppingList[i];
+  // Move group as unit
+  let groupSize=1;
+  if(item&&item.isGroupHeader){
+    let j=i+1;
+    while(j<state.shoppingList.length&&state.shoppingList[j].parentGroup===item.id){groupSize++;j++;}
+  }
+  let newIdx=Math.max(0,Math.min(state.shoppingList.length-groupSize,i+Math.round(dy/rowH)));
+  if(newIdx!==i){
+    const moved=state.shoppingList.splice(i,groupSize);
+    state.shoppingList.splice(newIdx,0,...moved);
+    saveState();
+  }
+  _shopDragIdx=null;_shopDragEl=null;
+  renderShopping();
+}
+
+function openShopActionMenu(i){
+  const item=state.shoppingList[i];if(!item)return;
+  _shopLPIdx=i;
+  const s='width:100%;padding:11px 14px;border-radius:12px;font-family:var(--font-body);font-size:14px;cursor:pointer;text-align:left;margin-bottom:6px;';
+  const norm=s+'background:var(--card);border:1px solid var(--sand);color:var(--ink);';
+  const del=s+'background:rgba(160,32,32,0.1);border:1px solid rgba(160,32,32,0.3);color:#a02020;';
+  let btns='';
+  if(item.isGroupHeader){
+    btns+='<button style="'+norm+'" onclick="renameShopGroup('+i+')">✏️ Rename group</button>';
+    btns+='<button style="'+norm+'" onclick="ungroupAllItems('+i+')">↤ Ungroup all items</button>';
+    btns+='<button style="'+del+'" onclick="deleteShopGroup('+i+')">🗑️ Delete group &amp; items</button>';
+  } else if(item.parentGroup){
+    btns+='<button style="'+norm+'" onclick="removeFromShopGroup('+i+')">↤ Remove from group</button>';
+    btns+='<button style="'+del+'" onclick="deleteShopItemFromMenu('+i+')">🗑️ Delete item</button>';
+  } else {
+    btns+='<button style="'+norm+'" onclick="openShopGroupPicker('+i+')">↦ Group with...</button>';
+    btns+='<button style="'+del+'" onclick="deleteShopItemFromMenu('+i+')">🗑️ Delete item</button>';
+  }
+  document.getElementById('shop-action-menu-title').textContent=item.name;
+  document.getElementById('shop-action-menu-btns').innerHTML=btns;
+  openModal('modal-shop-action');
+}
+
+function openShopGroupPicker(i){
+  closeModal('modal-shop-action');
+  const groups=state.shoppingList.filter(x=>x.isGroupHeader);
+  const s='width:100%;padding:11px 14px;border-radius:12px;font-family:var(--font-body);font-size:14px;cursor:pointer;text-align:left;margin-bottom:6px;background:var(--card);border:1px solid var(--sand);color:var(--ink);';
+  let btns=groups.map(g=>'<button style="'+s+'" onclick="addToShopGroup('+i+',\"'+g.id+'\")" >'+g.name+'</button>').join('');
+  btns+='<button style="'+s+'border-color:var(--h);color:var(--h);" onclick="createShopGroupFrom('+i+')">+ New group</button>';
+  document.getElementById('shop-action-menu-title').textContent='Add to group';
+  document.getElementById('shop-action-menu-btns').innerHTML=btns;
+  openModal('modal-shop-action');
+}
+
+function addToShopGroup(itemIdx,groupId){
+  closeModal('modal-shop-action');
+  const item=state.shoppingList[itemIdx];if(!item)return;
+  if(!item.id)item.id='item_'+Date.now();
+  item.parentGroup=groupId;delete item.isGroupHeader;
+  state.shoppingList.splice(itemIdx,1);
+  const hIdx=state.shoppingList.findIndex(x=>x.id===groupId);
+  if(hIdx===-1){state.shoppingList.push(item);}
+  else{
+    let ins=hIdx+1;
+    while(ins<state.shoppingList.length&&state.shoppingList[ins].parentGroup===groupId)ins++;
+    state.shoppingList.splice(ins,0,item);
+  }
+  saveState();renderShopping();
+}
+
+function createShopGroupFrom(i){
+  closeModal('modal-shop-action');
+  const item=state.shoppingList[i];if(!item)return;
+  const name=prompt('Group name:',item.name);
+  if(!name)return;
+  if(!item.id)item.id='grp_'+Date.now();
+  item.isGroupHeader=true;item.name=name;delete item.parentGroup;
+  saveState();renderShopping();
+}
+
+function renameShopGroup(i){
+  closeModal('modal-shop-action');
+  const item=state.shoppingList[i];if(!item)return;
+  const name=prompt('Rename group:',item.name);
+  if(name){item.name=name;saveState();renderShopping();}
+}
+
+function ungroupAllItems(i){
+  closeModal('modal-shop-action');
+  const item=state.shoppingList[i];if(!item)return;
+  const id=item.id;
+  delete item.isGroupHeader;
+  state.shoppingList.forEach(x=>{if(x.parentGroup===id)delete x.parentGroup;});
+  saveState();renderShopping();
+}
+
+function deleteShopGroup(i){
+  closeModal('modal-shop-action');
+  const item=state.shoppingList[i];if(!item)return;
+  const id=item.id;
+  state.shoppingList=state.shoppingList.filter(x=>x.id!==id&&x.parentGroup!==id);
+  saveState();renderShopping();
+}
+
+function removeFromShopGroup(i){
+  closeModal('modal-shop-action');
+  const item=state.shoppingList[i];if(!item)return;
+  delete item.parentGroup;saveState();renderShopping();
+}
+
+function deleteShopItemFromMenu(i){
+  closeModal('modal-shop-action');
+  deleteShopItem(i);
+}
+
+function toggleShopGroup(groupId){
+  if(!window.shopCollapsed)window.shopCollapsed={};
+  window.shopCollapsed[groupId]=!window.shopCollapsed[groupId];
+  renderShopping();
+}
+
+function shopInputKey(e){if(e.key==='Enter'){e.preventDefault();e.target.blur();}}
+function saveShopItemName(el,i){
+  if(!state.shoppingList[i])return;
+  const val=el.value.trim();
+  if(!val){el.value=state.shoppingList[i].name;return;}
+  state.shoppingList[i].name=val;saveState();
+}
+
 function addShopItem(){
   const input=document.getElementById('shop-new-input');const val=input.value.trim();if(!val)return;
   state.shoppingList.push({id:'item_'+Date.now()+'_'+Math.random().toString(36).slice(2),name:val,amount:'',checked:false});
@@ -1842,7 +2128,7 @@ const THEMES=[
   {id:'salt-ponds',name:'Salt Ponds',hBg:'#148C80',hC:'#fdf6e0',bBg:'#f0e8d0',dots:['#148C80','#8ABFBF','#F28B0C','#D96B0B']},
 ];
 function renderSettings(){
-  document.getElementById('settings-library-name').textContent=(state.libraryName||'The Cauldron & Spoon')+' ✎';
+  document.getElementById('settings-library-name').textContent=(state.libraryName||'The Spoon & Cauldron')+' ✎';
   document.getElementById('drive-status-text').innerHTML=state.driveConnected?'<span style="color:var(--h)">●</span> connected':'<span style="color:var(--inks)">●</span> not connected';
   document.getElementById('units-value').textContent=(state.units==='imperial'?'Imperial':'Metric')+' ›';
   document.getElementById('sort-setting-value').textContent=state.sortOrder.charAt(0).toUpperCase()+state.sortOrder.slice(1)+' ›';
@@ -1863,7 +2149,7 @@ function setTheme(id){
   document.documentElement.setAttribute('data-theme',themeVal);
   saveState();renderSettings();showToast('Theme updated!');
 }
-function openRenameLibrary(){document.getElementById('rename-input').value=state.libraryName||'The Cauldron & Spoon';openModal('modal-rename');}
+function openRenameLibrary(){document.getElementById('rename-input').value=state.libraryName||'The Spoon & Cauldron';openModal('modal-rename');}
 function confirmRename(){
   const val=document.getElementById('rename-input').value.trim();if(!val)return;
   state.libraryName=val;
@@ -1977,7 +2263,7 @@ function doSearch(query){
     const sub=mI?'ingredient match':mN?'notes match':'title match';
     return `<div class="search-result-item" onclick="openRecipe('${r.id}');searchTags=[];">
       <div class="search-result-thumb" style="background:${r.coverBg||'var(--tagbg)'}">
-        ${r.coverType==='photo'&&r.coverPhoto?`<img src="${r.coverPhoto}"/>`:`<span>${r.coverEmoji||'🫙'}</span>`}
+        ${r.coverType==='photo'&&r.coverPhoto?`<img src="${r.coverPhoto}"/>`:`<span>${r.coverEmoji||'🪩'}</span>`}
       </div>
       <div style="flex:1;min-width:0;">
         <div class="search-result-name">${r.name.replace(new RegExp(q,'gi'),m=>`<span class="search-match-hi">${m}</span>`)}</div>
@@ -2043,22 +2329,27 @@ function loadSampleData(){
 // ═══════════════════════════════
 // INIT
 // ═══════════════════════════════
+function applyTheme(){
+  const tv=(state.theme&&state.theme!=='cauldron')?state.theme:'';
+  document.getElementById('app').setAttribute('data-theme',tv);
+  document.documentElement.setAttribute('data-theme',tv);
+}
+
 function init(){
   loadState();
-  // Migrate old default library name to new default
-  if(!state.libraryName||state.libraryName==='The Cauldron'){
-    state.libraryName='The Cauldron & Spoon';
-    saveState();
+  // Migrate old library name
+  if(!state.libraryName||state.libraryName==='The Cauldron'||state.libraryName==='The Cauldron & Spoon'){
+    state.libraryName='The Spoon & Cauldron';
   }
-  if(state.theme&&state.theme!=='cauldron'){
-    const tv=state.theme;
-    document.getElementById('app').setAttribute('data-theme',tv);
-    document.documentElement.setAttribute('data-theme',tv);
-  }
-  // Only load sample data if truly no recipes and no v1 data existed
+  applyTheme();
   const hasV1=!!localStorage.getItem('cauldron_state');
-  if(state.recipes.length===0&&!hasV1){loadSampleData();saveState();}
-  if(state.driveConnected||state.clientId)showScreen('home');
+  if(state.recipes.length===0&&!hasV1){loadSampleData();}
+  saveState();
+  // Show setup screen only on very first launch (no recipes, no localStorage)
+  const isFirstLaunch=!localStorage.getItem('cauldron_v2')&&!localStorage.getItem('cauldron_state');
+  showScreen(isFirstLaunch?'setup':'home');
+  // Load fresh data from Supabase in background
+  loadFromSupabase();
 }
 init();
 </script>
