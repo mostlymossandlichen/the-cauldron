@@ -174,12 +174,12 @@ body{font-family:var(--font-body);background:var(--h2);color:var(--ink);font-siz
 .section-header{font-family:var(--font-body);font-size:10px;text-transform:uppercase;letter-spacing:1px;color:var(--inks);border-bottom:1px solid var(--sand);padding-bottom:4px;margin-bottom:7px;}
 .recipe-section{margin-bottom:14px;}
 /* Ingredients */
-.ingredient-row{display:flex;align-items:center;gap:7px;padding:5px 0;border-bottom:1px solid rgba(224,216,64,.3);position:relative;overflow:hidden;transition:transform .2s ease;touch-action:pan-y;}
+.ingredient-row{display:flex;align-items:center;gap:7px;padding:5px 0;border-bottom:1px solid rgba(224,216,64,.3);position:relative;overflow:hidden;transition:transform .2s ease;touch-action:pan-y;-webkit-user-select:none;user-select:none;}
 .ingredient-row.swiping{transform:translateX(-64px);}
 .amt-pill{font-family:var(--font-body);font-size:10px;background:rgba(253,232,192,.8);color:var(--terdd);padding:3px 9px;border-radius:12px;min-width:52px;text-align:center;border:1px solid rgba(240,192,112,.6);flex-shrink:0;cursor:pointer;}
 .ing-name{font-family:var(--font-display);font-size:13px;color:var(--ink);flex:1;}
 .ing-drag-handle{font-size:14px;color:var(--sandd);cursor:grab;padding:0 2px;touch-action:none;}
-.ing-swipe-action{position:absolute;right:0;top:0;bottom:0;width:58px;background:var(--swipe-add);display:flex;align-items:center;justify-content:center;cursor:pointer;}
+.ing-swipe-action{position:absolute;right:0;top:0;bottom:0;width:58px;background:var(--swipe-add);display:flex;align-items:center;justify-content:center;cursor:pointer;z-index:10;touch-action:manipulation;}
 .add-ingredient-btn{font-family:var(--font-body);font-size:11px;color:var(--h);cursor:pointer;margin-top:6px;display:inline-flex;align-items:center;gap:4px;background:none;border:none;padding:0;}
 .swipe-hint{font-family:var(--font-body);font-size:9px;color:var(--tm);margin-top:3px;}
 /* Inline editable fields */
@@ -890,6 +890,14 @@ async function loadFromSupabase(){
     }
   }catch(e){}
   try{localStorage.setItem('cauldron_v2',JSON.stringify(state));}catch(e){}
+  // Migrate rating on freshly loaded Supabase data too
+  state.recipes.forEach(r=>{
+    (r.iterations||[]).forEach(iter=>{
+      if(!iter.customFields)iter.customFields=[];
+      if(!iter.customFields.some(cf=>cf.type==='rating'))
+        iter.customFields.unshift({name:'Rating',type:'rating',value:0});
+    });
+  });
   applyTheme();
   renderHome();
   renderShopping();
@@ -1157,7 +1165,7 @@ function renderIteration(r,idx){
         <span class="ing-drag-handle" ontouchstart="ingTouchStart(event,${i})" ontouchmove="ingTouchMove(event,${i})" ontouchend="ingTouchEnd(event,${i})" onclick="event.stopPropagation()">⠿</span>
         <span class="amt-pill">${ing.amount} ${ing.unit&&ing.unit!=='—'?ing.unit:''}</span>
         <span class="ing-name">${ing.name}</span>
-        <div class="ing-swipe-action" id="ing-action-${i}" style="display:none;" onclick="addIngToShopping(${i})">
+        <div class="ing-swipe-action" id="ing-action-${i}" style="display:none;z-index:10;pointer-events:auto;" onclick="addIngToShopping(${i})" ontouchend="event.stopPropagation();event.preventDefault();addIngToShopping(${i})">
           <svg width="30" height="34" viewBox="0 0 512 580" fill="none">
             <circle cx="195" cy="75" r="22" fill="#164C45" opacity=".55"/><circle cx="256" cy="44" r="30" fill="#164C45" opacity=".65"/><circle cx="318" cy="70" r="17" fill="#164C45" opacity=".5"/>
             <path d="M111.574,116.575H400.426a4.298,4.298,0,0,1,4.298,4.298v24.071a25.79,25.79,0,0,1-25.79,25.79H133.066a25.79,25.79,0,0,1-25.79-25.79v-24.071A4.298,4.298,0,0,1,111.574,116.575Z" fill="#CC8D1A"/>
@@ -1510,7 +1518,10 @@ document.getElementById('lightbox').addEventListener('touchend',e=>{if(e.touches
 // EDIT RECIPE
 // ═══════════════════════════════
 function startNewRecipe(){
-  editingRecipeId=null;editIngredients=[];editCustomFields=[];editTags=[];
+  editingRecipeId=null;editIngredients=[];
+  // Default rating field on every new recipe
+  editCustomFields=[{name:'Rating',type:'rating',value:0}];
+  editTags=[];
   editCoverType='emoji';editCoverValue='🪩';editCoverPhotoData=null;
   document.getElementById('edit-screen-title').textContent='new recipe';
   // Use local date for new recipe default
@@ -1649,18 +1660,25 @@ function confirmAddIngredient(){
   if(!name){showToast('Please enter an ingredient name');return;}
   if(!state.savedIngredients.includes(name))state.savedIngredients.push(name);
   state.savedIngredients=[...new Set(state.savedIngredients.map(s=>s.toLowerCase()))];
-  if(amountPickerTarget==='view_add'){
-    // Adding directly from recipe view — update state and re-render immediately
-    const r=state.recipes.find(x=>x.id===currentRecipeId);
-    if(r){r.iterations[currentIterIdx].ingredients.push({name,amount,unit});r.updatedAt=Date.now();saveState();renderIteration(r,currentIterIdx);}
-  } else if(amountPickerTarget!==null&&amountPickerTarget!==undefined&&editIngredients[amountPickerTarget]){
-    editIngredients[amountPickerTarget]={name,amount,unit};
-    saveState();renderEditIngredients();
-  } else {
-    editIngredients.push({name,amount,unit});
-    saveState();renderEditIngredients();
-  }
   closeModal('modal-add-ingredient');
+  // Small delay so modal closes before re-render
+  setTimeout(()=>{
+    if(amountPickerTarget==='view_add'){
+      const r=state.recipes.find(x=>x.id===currentRecipeId);
+      if(r&&r.iterations[currentIterIdx]){
+        r.iterations[currentIterIdx].ingredients.push({name,amount,unit});
+        r.updatedAt=Date.now();
+        saveState();
+        renderIteration(r,currentIterIdx);
+      }
+    } else if(amountPickerTarget!==null&&amountPickerTarget!==undefined&&editIngredients[amountPickerTarget]){
+      editIngredients[amountPickerTarget]={name,amount,unit};
+      renderEditIngredients();
+    } else {
+      editIngredients.push({name,amount,unit});
+      renderEditIngredients();
+    }
+  },50);
 }
 function showIngSuggestions(val){
   const el=document.getElementById('ing-suggestions-modal');if(!val||val.length<2){el.innerHTML='';return;}
@@ -2341,6 +2359,14 @@ function init(){
   if(!state.libraryName||state.libraryName==='The Cauldron'||state.libraryName==='The Cauldron & Spoon'){
     state.libraryName='The Spoon & Cauldron';
   }
+  // Migrate: add default Rating CF to any iteration missing it
+  state.recipes.forEach(r=>{
+    (r.iterations||[]).forEach(iter=>{
+      if(!iter.customFields)iter.customFields=[];
+      const hasRating=iter.customFields.some(cf=>cf.type==='rating');
+      if(!hasRating)iter.customFields.unshift({name:'Rating',type:'rating',value:0});
+    });
+  });
   applyTheme();
   const hasV1=!!localStorage.getItem('cauldron_state');
   if(state.recipes.length===0&&!hasV1){loadSampleData();}
