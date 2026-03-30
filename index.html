@@ -174,7 +174,8 @@ body{font-family:var(--font-body);background:var(--h2);color:var(--ink);font-siz
 .section-header{font-family:var(--font-body);font-size:10px;text-transform:uppercase;letter-spacing:1px;color:var(--inks);border-bottom:1px solid var(--sand);padding-bottom:4px;margin-bottom:7px;}
 .recipe-section{margin-bottom:14px;}
 /* Ingredients */
-.ingredient-row{display:flex;align-items:center;gap:7px;padding:5px 0;border-bottom:1px solid rgba(224,216,64,.3);position:relative;overflow:hidden;transition:transform .2s ease;touch-action:pan-y;-webkit-user-select:none;user-select:none;}
+.ingredient-row{display:flex;align-items:center;gap:7px;padding:5px 0;border-bottom:1px solid rgba(224,216,64,.3);position:relative;overflow:visible;transition:transform .2s ease;touch-action:manipulation;-webkit-user-select:none;user-select:none;}
+.ingredient-row:hover .ing-swipe-action{display:flex!important;}
 .ingredient-row.swiping{transform:translateX(-64px);}
 .amt-pill{font-family:var(--font-body);font-size:10px;background:rgba(253,232,192,.8);color:var(--terdd);padding:3px 9px;border-radius:12px;min-width:52px;text-align:center;border:1px solid rgba(240,192,112,.6);flex-shrink:0;cursor:pointer;}
 .ing-name{font-family:var(--font-display);font-size:13px;color:var(--ink);flex:1;}
@@ -256,8 +257,8 @@ body{font-family:var(--font-body);background:var(--h2);color:var(--ink);font-siz
 .shop-add-btn{background:var(--terd);border-radius:20px;padding:7px 14px;font-family:var(--font-body);font-size:12px;color:white;border:none;cursor:pointer;}
 .shop-hint{font-family:var(--font-body);font-size:9px;color:var(--tm);padding:6px 14px 2px;}
 .shop-item{display:flex;align-items:center;gap:9px;padding:9px 12px;background:var(--card);border-radius:10px;border:1px solid var(--sand);margin-bottom:6px;position:relative;overflow:hidden;transition:transform .2s ease;touch-action:pan-y;}
-.shop-group-header{border-color:var(--h);border-width:1.5px;background:var(--card);}
-.shop-child-item{margin-left:22px;border-left:3px solid var(--h);border-radius:0 10px 10px 0;margin-bottom:3px;}
+.shop-group-header{border-color:var(--h);border-width:1.5px;background:var(--h);color:var(--cr);}
+.shop-child-item{margin-left:22px;border-left:3px solid var(--h);border-radius:0 10px 10px 0;margin-bottom:3px;background:var(--parch);}
 .shop-name-input{font-family:var(--font-body);font-size:13px;color:var(--ink);background:transparent;border:none;outline:none;flex:1;min-width:10px;padding:0;}
 .shop-item.dragging{opacity:.7;transform:scale(1.02);z-index:10;}
 .shop-item.drag-over{border-color:var(--h);border-style:dashed;}
@@ -1165,7 +1166,7 @@ function renderIteration(r,idx){
         <span class="ing-drag-handle" ontouchstart="ingTouchStart(event,${i})" ontouchmove="ingTouchMove(event,${i})" ontouchend="ingTouchEnd(event,${i})" onclick="event.stopPropagation()">⠿</span>
         <span class="amt-pill">${ing.amount} ${ing.unit&&ing.unit!=='—'?ing.unit:''}</span>
         <span class="ing-name">${ing.name}</span>
-        <div class="ing-swipe-action" id="ing-action-${i}" style="display:none;z-index:10;pointer-events:auto;" ontouchstart="event.stopPropagation();" ontouchend="event.stopPropagation();event.preventDefault();ingCauldronTap(${i});" onclick="ingCauldronTap(${i})">
+        <div class="ing-swipe-action" id="ing-action-${i}" style="display:none;z-index:10;pointer-events:auto;" onclick="ingCauldronTap(${i})">
           <svg width="30" height="34" viewBox="0 0 512 580" fill="none">
             <circle cx="195" cy="75" r="22" fill="#164C45" opacity=".55"/><circle cx="256" cy="44" r="30" fill="#164C45" opacity=".65"/><circle cx="318" cy="70" r="17" fill="#164C45" opacity=".5"/>
             <path d="M111.574,116.575H400.426a4.298,4.298,0,0,1,4.298,4.298v24.071a25.79,25.79,0,0,1-25.79,25.79H133.066a25.79,25.79,0,0,1-25.79-25.79v-24.071A4.298,4.298,0,0,1,111.574,116.575Z" fill="#CC8D1A"/>
@@ -1405,7 +1406,29 @@ function ingHoldMove(e,i){
   if(Math.abs(e.touches[0].clientX-ingHoldStartX)>10||Math.abs(e.touches[0].clientY-ingHoldStartY)>10)
     clearTimeout(ingHoldTimer);
 }
-function ingHoldEnd(e,i){clearTimeout(ingHoldTimer);}
+function ingHoldEnd(e,i){
+  clearTimeout(ingHoldTimer);
+  // If cauldron is visible, the touchend IS the tap — fire it
+  const action=document.getElementById('ing-action-'+i);
+  if(action&&action.style.display!=='none'){
+    // Check it was a short tap (not a drag)
+    const dx=Math.abs(e.changedTouches[0].clientX-ingHoldStartX);
+    const dy=Math.abs(e.changedTouches[0].clientY-ingHoldStartY);
+    if(dx<15&&dy<15){
+      // Tap was on cauldron area (right side of row)
+      const rowEl=document.getElementById('ing-row-'+i);
+      if(rowEl){
+        const rect=rowEl.getBoundingClientRect();
+        const tapX=e.changedTouches[0].clientX;
+        if(tapX>rect.right-70){
+          // Tapped in cauldron zone
+          ingCauldronTap(i);
+          e.preventDefault();
+        }
+      }
+    }
+  }
+}
 function addIngToShopping(idx){
   const r=state.recipes.find(x=>x.id===currentRecipeId);if(!r)return;
   const ing=r.iterations[currentIterIdx].ingredients[idx];if(!ing)return;
@@ -1764,10 +1787,11 @@ function confirmAddCf(){
 // SHOPPING LIST
 // ═══════════════════════════════
 function renderShopping(){
+  try{
   const el=document.getElementById('shop-list');if(!el)return;
   const list=state.shoppingList||[];
   const total=list.length,checked=list.filter(x=>x.checked).length;
-  document.getElementById('shop-count').textContent=total+' item'+(total!==1?'s':'')+' · '+checked+' checked';
+  (document.getElementById('shop-subtitle')||{}).textContent=total+' item'+(total!==1?'s':'')+' · '+checked+' checked';
   if(!window.shopCollapsed)window.shopCollapsed={};
   if(total===0){
     el.innerHTML='<div style="text-align:center;color:var(--inks);padding:40px 20px;font-family:var(--font-display);font-style:italic;">your list is empty</div>';
@@ -1776,7 +1800,10 @@ function renderShopping(){
   let html='';
   const delSvg='<svg width="18" height="18" viewBox="0 0 24 24" fill="none"><polyline points="3 6 5 6 21 6" stroke="white" stroke-width="1.8" stroke-linecap="round"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6" stroke="white" stroke-width="1.8" stroke-linecap="round"/><path d="M10 11v6M14 11v6" stroke="white" stroke-width="1.8" stroke-linecap="round"/></svg>';
   const chkSvg='<svg width="10" height="8" viewBox="0 0 10 8"><polyline points="1,4 4,7 9,1" stroke="white" stroke-width="1.8" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>';
-  const dragH='<span class="shop-drag" ontouchstart="shopDragHandleStart(event,IDX)" ontouchmove="shopDragHandleMove(event,IDX)" ontouchend="shopDragHandleEnd(event,IDX)">&#8942;</span>';
+  function mkDrag(idx,isHdr){
+    const col=isHdr?' style="color:var(--cr);opacity:0.7;"':'';
+    return '<span class="shop-drag"'+col+' draggable="true" onmousedown="shopMouseDragStart(event,'+idx+')" ontouchstart="shopDragHandleStart(event,'+idx+')" ontouchmove="shopDragHandleMove(event,'+idx+')" ontouchend="shopDragHandleEnd(event,'+idx+')"><svg width=\"10\" height=\"14\" viewBox=\"0 0 10 14\" fill=\"currentColor\"><circle cx=\"2\" cy=\"2\" r=\"1.5\"/><circle cx=\"8\" cy=\"2\" r=\"1.5\"/><circle cx=\"2\" cy=\"7\" r=\"1.5\"/><circle cx=\"8\" cy=\"7\" r=\"1.5\"/><circle cx=\"2\" cy=\"12\" r=\"1.5\"/><circle cx=\"8\" cy=\"12\" r=\"1.5\"/></svg></span>';
+  }
 
   let i=0;
   while(i<list.length){
@@ -1789,12 +1816,12 @@ function renderShopping(){
       let childCount=0,j=i+1;
       while(j<list.length&&list[j].parentGroup===item.id){childCount++;j++;}
       const collapsed=window.shopCollapsed[item.id];
-      const drag=dragH.replace(/IDX/g,i);
-      html+='<div class="shop-item shop-group-header" id="shop-item-'+i+'" ontouchstart="shopTouchStart(event,'+i+')" ontouchmove="shopTouchMove(event,'+i+')" ontouchend="shopTouchEnd(event,'+i+')">';
+      const drag=mkDrag(i,true);
+      html+='<div class="shop-item shop-group-header" id="shop-item-'+i+'" ontouchstart="shopTouchStart(event,'+i+')" ontouchmove="shopTouchMove(event,'+i+')" ontouchend="shopTouchEnd(event,'+i+')" oncontextmenu="event.preventDefault();openShopActionMenu('+i+')">';
       html+='<div class="shop-checkbox'+(item.checked?' checked':'')+'" onclick="toggleShopItem('+i+')">'+(item.checked?chkSvg:'')+'</div>';
-      html+='<span style="font-weight:600;flex:1;font-family:var(--font-body);font-size:13px;color:var(--ink);cursor:pointer;" onclick="toggleShopGroup(\'' + item.id + '\')">'+item.name+'</span>';
-      html+='<span style="font-family:var(--font-body);font-size:10px;color:var(--inks);margin-right:4px;">'+childCount+' item'+(childCount!==1?'s':'')+'</span>';
-      html+='<span style="font-size:14px;color:var(--inks);margin-right:4px;cursor:pointer;" onclick="toggleShopGroup(\'' + item.id + '\')">'+( collapsed?'›':'⌄' )+'</span>';
+      html+='<span style="font-weight:600;flex:1;font-family:var(--font-body);font-size:13px;color:var(--cr);cursor:pointer;" onclick="toggleShopGroup(\'' + item.id + '\')">'+item.name+'</span>';
+      html+='<span style="font-family:var(--font-body);font-size:10px;color:var(--cr);opacity:0.8;margin-right:4px;">'+childCount+' item'+(childCount!==1?'s':'')+'</span>';
+      html+='<span style="font-size:14px;color:var(--cr);opacity:0.8;margin-right:4px;cursor:pointer;" onclick="toggleShopGroup(\'' + item.id + '\')">'+( collapsed?'›':'⌄' )+'</span>';
       html+=drag;
       html+='<div class="shop-delete-reveal" id="shop-del-'+i+'" style="display:none;" onclick="deleteShopItem('+i+')">'+delSvg+'</div>';
       html+='</div>';
@@ -1802,8 +1829,8 @@ function renderShopping(){
       if(!collapsed){
         while(i<list.length&&list[i].parentGroup===item.id){
           const ci=i,child=list[ci];
-          const cdrag=dragH.replace(/IDX/g,ci);
-          html+='<div class="shop-item shop-child-item" id="shop-item-'+ci+'" ontouchstart="shopTouchStart(event,'+ci+')" ontouchmove="shopTouchMove(event,'+ci+')" ontouchend="shopTouchEnd(event,'+ci+')">';
+          const cdrag=mkDrag(ci,false);
+          html+='<div class="shop-item shop-child-item" id="shop-item-'+ci+'" ontouchstart="shopTouchStart(event,'+ci+')" ontouchmove="shopTouchMove(event,'+ci+')" ontouchend="shopTouchEnd(event,'+ci+')" oncontextmenu="event.preventDefault();openShopActionMenu('+ci+')">';
           html+='<div class="shop-checkbox'+(child.checked?' checked':'')+'" onclick="toggleShopItem('+ci+')">'+(child.checked?chkSvg:'')+'</div>';
           html+='<input class="shop-name-input" data-idx="'+ci+'" value="'+child.name.replace(/"/g,'&quot;')+'" onblur="saveShopItemName(this,'+ci+')" onkeydown="shopInputKey(event)"/>';
           if(child.amount)html+='<span class="shop-item-amt">'+child.amount+'</span>';
@@ -1815,8 +1842,8 @@ function renderShopping(){
         while(i<list.length&&list[i].parentGroup===item.id)i++;
       }
     } else {
-      const drag=dragH.replace(/IDX/g,i);
-      html+='<div class="shop-item" id="shop-item-'+i+'" ontouchstart="shopTouchStart(event,'+i+')" ontouchmove="shopTouchMove(event,'+i+')" ontouchend="shopTouchEnd(event,'+i+')">';
+      const drag=mkDrag(i,false);
+      html+='<div class="shop-item" id="shop-item-'+i+'" ontouchstart="shopTouchStart(event,'+i+')" ontouchmove="shopTouchMove(event,'+i+')" ontouchend="shopTouchEnd(event,'+i+')" oncontextmenu="event.preventDefault();openShopActionMenu('+i+')">';
       html+='<div class="shop-checkbox'+(item.checked?' checked':'')+'" onclick="toggleShopItem('+i+')">'+(item.checked?chkSvg:'')+'</div>';
       html+='<input class="shop-name-input" data-idx="'+i+'" value="'+item.name.replace(/"/g,'&quot;')+'" onblur="saveShopItemName(this,'+i+')" onkeydown="shopInputKey(event)"/>';
       if(item.amount)html+='<span class="shop-item-amt">'+item.amount+'</span>';
@@ -1828,6 +1855,7 @@ function renderShopping(){
   }
   html+='<div style="height:20px;"></div>';
   el.innerHTML=html+(checked>0?'<button class="clear-completed-btn" onclick="clearCompleted()">clear completed ('+checked+')</button>':'');
+  }catch(err){console.error('renderShopping error:',err);el.innerHTML='<div style="color:red;padding:20px;">Error: '+err.message+'</div>';}
 }
 
 
@@ -1903,7 +1931,10 @@ function openShopGroupPicker(i){
   closeModal('modal-shop-action');
   const groups=state.shoppingList.filter(x=>x.isGroupHeader);
   const s='width:100%;padding:11px 14px;border-radius:12px;font-family:var(--font-body);font-size:14px;cursor:pointer;text-align:left;margin-bottom:6px;background:var(--card);border:1px solid var(--sand);color:var(--ink);';
-  let btns=groups.map(g=>'<button style="'+s+'" onclick="addToShopGroup('+i+',\"'+g.id+'\")" >'+g.name+'</button>').join('');
+  let btns=groups.map(g=>{
+    const safeId=g.id.replace(/'/g,'');
+    return '<button style="'+s+'" onclick="addToShopGroup('+i+',\'' +safeId+ '\')">'+g.name+'</button>';
+  }).join('');;
   btns+='<button style="'+s+'border-color:var(--h);color:var(--h);" onclick="createShopGroupFrom('+i+')">+ New group</button>';
   document.getElementById('shop-action-menu-title').textContent='Add to group';
   document.getElementById('shop-action-menu-btns').innerHTML=btns;
@@ -1927,12 +1958,47 @@ function addToShopGroup(itemIdx,groupId){
 }
 
 function createShopGroupFrom(i){
-  closeModal('modal-shop-action');
+  document.getElementById('shop-action-menu-title').textContent='New Group Name';
+  const s='width:100%;padding:11px 14px;border-radius:12px;font-family:var(--font-body);font-size:14px;cursor:pointer;text-align:left;margin-bottom:6px;';
   const item=state.shoppingList[i];if(!item)return;
-  const name=prompt('Group name:',item.name);
-  if(!name)return;
-  if(!item.id)item.id='grp_'+Date.now();
-  item.isGroupHeader=true;item.name=name;delete item.parentGroup;
+  const btns=document.getElementById('shop-action-menu-btns');
+  btns.innerHTML='';
+  const inp=document.createElement('input');
+  inp.id='shop-group-name-input';inp.className='field-input';
+  inp.placeholder='Group name...';inp.value=item.name;
+  inp.style.marginBottom='10px';
+  inp.addEventListener('keydown',function(e){if(e.key==='Enter')confirmCreateShopGroup(i);});
+  const createBtn=document.createElement('button');
+  createBtn.style.cssText=s+'background:var(--h);color:var(--cr);border:none;';
+  createBtn.textContent='Create Group';
+  createBtn.addEventListener('click',function(){confirmCreateShopGroup(i);});
+  const cancelBtn=document.createElement('button');
+  cancelBtn.style.cssText=s+'background:none;border:1px solid var(--sand);color:var(--inks);';
+  cancelBtn.textContent='Cancel';
+  cancelBtn.addEventListener('click',function(){closeModal('modal-shop-action');});
+  btns.appendChild(inp);btns.appendChild(createBtn);btns.appendChild(cancelBtn);
+  setTimeout(()=>inp.focus(),100);
+}
+function shopGroupNameKey(e,i){if(e.key==='Enter')confirmCreateShopGroup(i);}
+function confirmCreateShopGroup(i){
+  const inp=document.getElementById('shop-group-name-input');
+  const name=inp?inp.value.trim():'';
+  if(!name){inp&&inp.focus();return;}
+  const item=state.shoppingList[i];if(!item)return;
+  // Create a NEW group header — don't turn the existing item into the header
+  const newGroup={
+    id:'grp_'+Date.now()+'_'+Math.random().toString(36).slice(2),
+    name:name,isGroupHeader:true,checked:false,amount:''
+  };
+  // Ensure item has an id
+  if(!item.id)item.id='item_'+Date.now();
+  // Attach the item to the new group
+  item.parentGroup=newGroup.id;
+  delete item.isGroupHeader;
+  // Insert the group header right before the item
+  state.shoppingList.splice(i,0,newGroup);
+  // item is now at i+1, already has parentGroup set
+  closeModal('modal-shop-action');
   saveState();renderShopping();
 }
 
@@ -2116,17 +2182,47 @@ function indentItem(i){
 }
 
 // Desktop drag (mouse) — still works on desktop
-let shopMouseDragIdx=null;
+let shopMouseDragIdx=null,shopMouseDragStartY=0,shopMouseDragging=false;
 function shopDragStart(e,i){shopMouseDragIdx=i;e.dataTransfer.effectAllowed='move';}
 function shopDragOver(e,i){e.preventDefault();}
-function shopDragLeave(e,i){document.getElementById('shop-item-'+i)&&document.getElementById('shop-item-'+i).classList.remove('drag-over');}
-function shopDrop(e,i){
+function shopDragLeave(e,i){}
+function shopDrop(e,i){e.preventDefault();shopMouseDragIdx=null;}
+function shopMouseDragStart(e,i){
   e.preventDefault();
-  if(shopMouseDragIdx===null||shopMouseDragIdx===i){shopMouseDragIdx=null;return;}
-  const moved=state.shoppingList.splice(shopMouseDragIdx,1)[0];
-  const finalIdx=Math.max(0,Math.min(state.shoppingList.length,shopMouseDragIdx<i?i-1:i));
-  state.shoppingList.splice(finalIdx,0,moved);
-  shopMouseDragIdx=null;saveState();renderShopping();
+  shopMouseDragIdx=i;shopMouseDragStartY=e.clientY;shopMouseDragging=true;
+  const el=document.getElementById('shop-item-'+i);
+  if(el)el.style.opacity='0.5';
+  function onMove(ev){
+    if(!shopMouseDragging)return;
+    const el2=document.getElementById('shop-item-'+shopMouseDragIdx);
+    if(el2)el2.style.transform='translateY('+(ev.clientY-shopMouseDragStartY)+'px)';
+  }
+  function onUp(ev){
+    shopMouseDragging=false;
+    document.removeEventListener('mousemove',onMove);
+    document.removeEventListener('mouseup',onUp);
+    const el2=document.getElementById('shop-item-'+shopMouseDragIdx);
+    if(el2){el2.style.opacity='1';el2.style.transform='';}
+    const dy=ev.clientY-shopMouseDragStartY;
+    const rowH=56;
+    const srcIdx=shopMouseDragIdx;
+    const item=state.shoppingList[srcIdx];
+    if(!item){shopMouseDragIdx=null;renderShopping();return;}
+    let groupSize=1;
+    if(item.isGroupHeader){
+      let j=srcIdx+1;
+      while(j<state.shoppingList.length&&state.shoppingList[j].parentGroup===item.id){groupSize++;j++;}
+    }
+    let newIdx=Math.max(0,Math.min(state.shoppingList.length-groupSize,srcIdx+Math.round(dy/rowH)));
+    if(newIdx!==srcIdx){
+      const moved=state.shoppingList.splice(srcIdx,groupSize);
+      state.shoppingList.splice(newIdx,0,...moved);
+      saveState();
+    }
+    shopMouseDragIdx=null;renderShopping();
+  }
+  document.addEventListener('mousemove',onMove);
+  document.addEventListener('mouseup',onUp);
 }
 // Close swipe on tap elsewhere
 document.addEventListener('touchstart',e=>{
