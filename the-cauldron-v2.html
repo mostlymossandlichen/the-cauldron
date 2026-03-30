@@ -39,6 +39,7 @@ html,body{height:100%;overflow:hidden;}
 body{font-family:var(--font-body);background:var(--h2);color:var(--ink);font-size:14px;line-height:1.5;-webkit-font-smoothing:antialiased;}
 #app{max-width:430px;margin:0 auto;height:100vh;height:100dvh;display:flex;flex-direction:column;background:var(--parch);position:relative;overflow:hidden;}
 .screen{display:none;flex-direction:column;flex:1;overflow:hidden;animation:fadeIn .2s ease;}
+.screen-setup-layout{align-items:center;justify-content:center;padding:40px 24px;text-align:center;}
 .screen.active{display:flex;}
 @keyframes fadeIn{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:translateY(0)}}
 .screen-body{flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;padding-bottom:env(safe-area-inset-bottom,0px);}
@@ -360,31 +361,13 @@ body{font-family:var(--font-body);background:var(--h2);color:var(--ink);font-siz
 <body>
 <div id="app">
 
-<!-- SETUP SCREEN -->
-<div id="screen-setup" class="screen active">
-  <div class="top-header" style="padding-bottom:16px;">
-    <div class="app-title" id="setup-app-name">The Spoon &amp; Cauldron</div>
-  </div>
-  <div class="screen-body">
-    <div class="setup-screen">
-      <div class="setup-icon">🌿</div>
-      <div class="setup-title">Welcome to The Spoon & Cauldron</div>
-      <div class="setup-desc">Your personal recipe collection, beautifully organised. Connect Google Drive to keep your recipes safe and synced.</div>
-      <div class="setup-input-group">
-        <div class="setup-input-label">Google Client ID</div>
-        <input class="setup-input" id="client-id-input" placeholder="paste your Client ID here..."/>
-      </div>
-      <div class="setup-input-group">
-        <div class="setup-input-label">Google Client Secret</div>
-        <input class="setup-input" id="client-secret-input" type="password" placeholder="paste your Client Secret here..."/>
-      </div>
-      <button class="setup-btn" onclick="initGoogleDrive()" style="margin-top:8px;">Connect Google Drive</button>
-      <button style="background:none;border:none;color:var(--inks);font-family:var(--font-body);font-size:12px;margin-top:14px;cursor:pointer;text-decoration:underline;" onclick="skipSetup()">Skip for now (use local storage)</button>
-    </div>
-  </div>
+<div class="screen screen-setup-layout" id="screen-setup">
+  <div style="font-size:64px;margin-bottom:20px;">🌿</div>
+  <div style="font-family:var(--font-display);font-size:28px;color:var(--h);margin-bottom:12px;">The Spoon &amp; Cauldron</div>
+  <div style="font-family:var(--font-body);font-size:14px;color:var(--inks);margin-bottom:40px;line-height:1.6;">Your personal recipe collection,<br>beautifully organised.</div>
+  <button onclick="skipSetup()" style="background:var(--h);color:var(--cr);font-family:var(--font-body);font-size:15px;padding:14px 40px;border-radius:30px;border:none;cursor:pointer;width:100%;max-width:280px;">Get Started</button>
 </div>
 
-<!-- HOME SCREEN -->
 <div id="screen-home" class="screen">
   <div class="top-header">
     <div class="app-title" id="home-app-name">The Spoon &amp; Cauldron</div>
@@ -937,7 +920,7 @@ function initGoogleDrive(){
   saveState();showToast('Google Drive connected!');
   setTimeout(()=>showScreen('home'),800);
 }
-function skipSetup(){saveState();showScreen('home');}
+function skipSetup(){state.setupDone=true;saveState();showScreen('home');}
 
 // ═══════════════════════════════
 // HOME
@@ -1452,7 +1435,8 @@ function setDefaultIteration(){
 function duplicateIteration(){
   const r=state.recipes.find(x=>x.id===currentRecipeId);if(!r)return;
   const iter=JSON.parse(JSON.stringify(r.iterations[currentIterIdx]));
-  iter.createdAt=Date.now();r.iterations.push(iter);r.updatedAt=Date.now();
+  // Keep original createdAt — don't overwrite with today
+  r.iterations.push(iter);r.updatedAt=Date.now();
   currentIterIdx=r.iterations.length-1;saveState();renderIterBar(r);renderIteration(r,currentIterIdx);
   showToast('Iteration duplicated');
 }
@@ -1529,7 +1513,9 @@ function startNewRecipe(){
   editingRecipeId=null;editIngredients=[];editCustomFields=[];editTags=[];
   editCoverType='emoji';editCoverValue='🪩';editCoverPhotoData=null;
   document.getElementById('edit-screen-title').textContent='new recipe';
-  document.getElementById('edit-iter-date').value=new Date().toISOString().split('T')[0];
+  // Use local date for new recipe default
+  const _nd=new Date();
+  document.getElementById('edit-iter-date').value=_nd.getFullYear()+'-'+String(_nd.getMonth()+1).padStart(2,'0')+'-'+String(_nd.getDate()).padStart(2,'0');
   document.getElementById('edit-name').value='';
   document.getElementById('edit-notes').value='';
   document.getElementById('cover-hint-text').textContent='tap to add a cover';
@@ -1548,6 +1534,11 @@ function editCurrentRecipe(){
   document.getElementById('edit-name').value=r.name;
   document.getElementById('edit-notes').value=iter.notes||'';
   document.getElementById('cover-hint-text').textContent='tap to change cover';
+  // Set iteration date as local date string
+  const _ets=iter.createdAt||Date.now();
+  const _ed=new Date(_ets);
+  const _edStr=_ed.getFullYear()+'-'+String(_ed.getMonth()+1).padStart(2,'0')+'-'+String(_ed.getDate()).padStart(2,'0');
+  document.getElementById('edit-iter-date').value=_edStr;
   renderEditIngredients();renderEditCFs();renderEditTags();
   showScreen('edit');
 }
@@ -1558,7 +1549,9 @@ function saveRecipe(){
   if(editTags.length===0){showToast('Please add at least one tag');return;}
   const notes=document.getElementById('edit-notes').value.trim();
   const _dateVal=document.getElementById('edit-iter-date').value;
-  const _iterTs=_dateVal?new Date(_dateVal).getTime():Date.now();
+  // Parse date as LOCAL noon to avoid UTC timezone offset issues
+  let _iterTs=Date.now();
+  if(_dateVal){const [_y,_m,_d]=_dateVal.split('-').map(Number);_iterTs=new Date(_y,_m-1,_d,12,0,0).getTime();}
   const iter={createdAt:_iterTs,ingredients:editIngredients,customFields:editCustomFields,notes,attachments:[]};
   if(editingRecipeId){
     const r=state.recipes.find(x=>x.id===editingRecipeId);
@@ -1773,9 +1766,9 @@ function renderShopping(){
       const drag=dragH.replace(/IDX/g,i);
       html+='<div class="shop-item shop-group-header" id="shop-item-'+i+'" ontouchstart="shopTouchStart(event,'+i+')" ontouchmove="shopTouchMove(event,'+i+')" ontouchend="shopTouchEnd(event,'+i+')">';
       html+='<div class="shop-checkbox'+(item.checked?' checked':'')+'" onclick="toggleShopItem('+i+')">'+(item.checked?chkSvg:'')+'</div>';
-      html+='<span style="font-weight:600;flex:1;font-family:var(--font-body);font-size:13px;color:var(--ink);cursor:pointer;" onclick="toggleShopGroup(''+item.id+'')">'+item.name+'</span>';
+      html+='<span style="font-weight:600;flex:1;font-family:var(--font-body);font-size:13px;color:var(--ink);cursor:pointer;" onclick="toggleShopGroup(\'' + item.id + '\')">'+item.name+'</span>';
       html+='<span style="font-family:var(--font-body);font-size:10px;color:var(--inks);margin-right:4px;">'+childCount+' item'+(childCount!==1?'s':'')+'</span>';
-      html+='<span style="font-size:14px;color:var(--inks);margin-right:4px;cursor:pointer;" onclick="toggleShopGroup(''+item.id+'')">'+(collapsed?'›':'⌄')+'</span>';
+      html+='<span style="font-size:14px;color:var(--inks);margin-right:4px;cursor:pointer;" onclick="toggleShopGroup(\'' + item.id + '\')">'+( collapsed?'›':'⌄' )+'</span>';
       html+=drag;
       html+='<div class="shop-delete-reveal" id="shop-del-'+i+'" style="display:none;" onclick="deleteShopItem('+i+')">'+delSvg+'</div>';
       html+='</div>';
@@ -1786,7 +1779,7 @@ function renderShopping(){
           const cdrag=dragH.replace(/IDX/g,ci);
           html+='<div class="shop-item shop-child-item" id="shop-item-'+ci+'" ontouchstart="shopTouchStart(event,'+ci+')" ontouchmove="shopTouchMove(event,'+ci+')" ontouchend="shopTouchEnd(event,'+ci+')">';
           html+='<div class="shop-checkbox'+(child.checked?' checked':'')+'" onclick="toggleShopItem('+ci+')">'+(child.checked?chkSvg:'')+'</div>';
-          html+='<input class="shop-name-input" value="'+child.name.replace(/"/g,'&quot;')+'" onblur="saveShopItemName(this,'+ci+')" onkeydown="if(event.key==='Enter'){event.preventDefault();this.blur();}"/>';
+          html+='<input class="shop-name-input" data-idx="'+ci+'" value="'+child.name.replace(/"/g,'&quot;')+'" onblur="saveShopItemName(this,'+ci+')" onkeydown="shopInputKey(event)"/>';
           if(child.amount)html+='<span class="shop-item-amt">'+child.amount+'</span>';
           html+='<div class="shop-delete-reveal" id="shop-del-'+ci+'" style="display:none;" onclick="deleteShopItem('+ci+')">'+delSvg+'</div>';
           html+='</div>';
@@ -1799,7 +1792,7 @@ function renderShopping(){
       const drag=dragH.replace(/IDX/g,i);
       html+='<div class="shop-item" id="shop-item-'+i+'" ontouchstart="shopTouchStart(event,'+i+')" ontouchmove="shopTouchMove(event,'+i+')" ontouchend="shopTouchEnd(event,'+i+')">';
       html+='<div class="shop-checkbox'+(item.checked?' checked':'')+'" onclick="toggleShopItem('+i+')">'+(item.checked?chkSvg:'')+'</div>';
-      html+='<input class="shop-name-input" value="'+item.name.replace(/"/g,'&quot;')+'" onblur="saveShopItemName(this,'+i+')" onkeydown="if(event.key==='Enter'){event.preventDefault();this.blur();}"/>';
+      html+='<input class="shop-name-input" data-idx="'+i+'" value="'+item.name.replace(/"/g,'&quot;')+'" onblur="saveShopItemName(this,'+i+')" onkeydown="shopInputKey(event)"/>';
       if(item.amount)html+='<span class="shop-item-amt">'+item.amount+'</span>';
       html+=drag;
       html+='<div class="shop-delete-reveal" id="shop-del-'+i+'" style="display:none;" onclick="deleteShopItem('+i+')">'+delSvg+'</div>';
@@ -1884,7 +1877,7 @@ function openShopGroupPicker(i){
   closeModal('modal-shop-action');
   const groups=state.shoppingList.filter(x=>x.isGroupHeader);
   const s='width:100%;padding:11px 14px;border-radius:12px;font-family:var(--font-body);font-size:14px;cursor:pointer;text-align:left;margin-bottom:6px;background:var(--card);border:1px solid var(--sand);color:var(--ink);';
-  let btns=groups.map(g=>'<button style="'+s+'" onclick="addToShopGroup('+i+',''+g.id+'')">'+g.name+'</button>').join('');
+  let btns=groups.map(g=>'<button style="'+s+'" onclick="addToShopGroup('+i+',\"'+g.id+'\")" >'+g.name+'</button>').join('');
   btns+='<button style="'+s+'border-color:var(--h);color:var(--h);" onclick="createShopGroupFrom('+i+')">+ New group</button>';
   document.getElementById('shop-action-menu-title').textContent='Add to group';
   document.getElementById('shop-action-menu-btns').innerHTML=btns;
@@ -1958,6 +1951,7 @@ function toggleShopGroup(groupId){
   renderShopping();
 }
 
+function shopInputKey(e){if(e.key==='Enter'){e.preventDefault();e.target.blur();}}
 function saveShopItemName(el,i){
   if(!state.shoppingList[i])return;
   const val=el.value.trim();
@@ -2351,7 +2345,9 @@ function init(){
   const hasV1=!!localStorage.getItem('cauldron_state');
   if(state.recipes.length===0&&!hasV1){loadSampleData();}
   saveState();
-  showScreen('home');
+  // Show setup screen only on very first launch (no recipes, no localStorage)
+  const isFirstLaunch=!localStorage.getItem('cauldron_v2')&&!localStorage.getItem('cauldron_state');
+  showScreen(isFirstLaunch?'setup':'home');
   // Load fresh data from Supabase in background
   loadFromSupabase();
 }
