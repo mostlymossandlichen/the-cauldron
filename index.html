@@ -1165,7 +1165,7 @@ function renderIteration(r,idx){
         <span class="ing-drag-handle" ontouchstart="ingTouchStart(event,${i})" ontouchmove="ingTouchMove(event,${i})" ontouchend="ingTouchEnd(event,${i})" onclick="event.stopPropagation()">⠿</span>
         <span class="amt-pill">${ing.amount} ${ing.unit&&ing.unit!=='—'?ing.unit:''}</span>
         <span class="ing-name">${ing.name}</span>
-        <div class="ing-swipe-action" id="ing-action-${i}" style="display:none;z-index:10;pointer-events:auto;" onclick="addIngToShopping(${i})" ontouchend="event.stopPropagation();event.preventDefault();addIngToShopping(${i})">
+        <div class="ing-swipe-action" id="ing-action-${i}" style="display:none;z-index:10;pointer-events:auto;" ontouchstart="event.stopPropagation();" ontouchend="event.stopPropagation();event.preventDefault();ingCauldronTap(${i});" onclick="ingCauldronTap(${i})">
           <svg width="30" height="34" viewBox="0 0 512 580" fill="none">
             <circle cx="195" cy="75" r="22" fill="#164C45" opacity=".55"/><circle cx="256" cy="44" r="30" fill="#164C45" opacity=".65"/><circle cx="318" cy="70" r="17" fill="#164C45" opacity=".5"/>
             <path d="M111.574,116.575H400.426a4.298,4.298,0,0,1,4.298,4.298v24.071a25.79,25.79,0,0,1-25.79,25.79H133.066a25.79,25.79,0,0,1-25.79-25.79v-24.071A4.298,4.298,0,0,1,111.574,116.575Z" fill="#CC8D1A"/>
@@ -1381,6 +1381,14 @@ function cfTouchEnd(e,i){
 }
 // Swipe ingredient to shopping
 let swipeStartX=0;
+// Cauldron tap handler - separate from touch event system
+let ingCauldronTapGuard=false;
+function ingCauldronTap(i){
+  if(ingCauldronTapGuard)return;
+  ingCauldronTapGuard=true;
+  setTimeout(()=>{ingCauldronTapGuard=false;},500);
+  addIngToShopping(i);
+}
 // Long-hold ingredient to reveal cauldron add-to-shopping button
 let ingHoldTimer=null,ingHoldStartX=0,ingHoldStartY=0;
 function ingHoldStart(e,i){
