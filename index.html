@@ -814,29 +814,57 @@ const SUPA_URL='https://pbfghfzihrcuiyzehuwi.supabase.co';
 const SUPA_KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBiZmdoZnppaHJjdWl5emVodXdpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQ4NDQ0MTMsImV4cCI6MjA5MDQyMDQxM30.zVAcA9ktLTzsGrW9vuvEmsJundk9UYBioC0OKoDd0h0';
 const SUPA_HDR={'Content-Type':'application/json','apikey':SUPA_KEY,'Authorization':'Bearer '+SUPA_KEY};
 
-async function supaUpsert(table,id,data){
+async function supaUpsert(table,uid,data){
   try{
-    // Try PATCH first (update existing row)
-    const r=await fetch(SUPA_URL+'/rest/v1/'+table+'?id=eq.'+id,{
-      method:'PATCH',headers:{...SUPA_HDR,'Prefer':'return=minimal'},
-      body:JSON.stringify({data})
-    });
-    // If no rows matched, POST to insert
-    if(r.status===204||r.ok)return;
-    await fetch(SUPA_URL+'/rest/v1/'+table,{
-      method:'POST',headers:{...SUPA_HDR,'Prefer':'return=minimal'},
-      body:JSON.stringify({id,data})
-    });
+    // Check if row exists for this user_id
+    const checkR=await fetch(SUPA_URL+'/rest/v1/'+table+'?user_id=eq.'+encodeURIComponent(uid)+'&select=id',
+      {headers:{'apikey':SUPA_KEY,'Authorization':'Bearer '+SUPA_KEY}});
+    const rows=await checkR.json();
+    if(rows&&rows.length>0){
+      // Row exists - PATCH it
+      const r=await fetch(SUPA_URL+'/rest/v1/'+table+'?user_id=eq.'+encodeURIComponent(uid),{
+        method:'PATCH',
+        headers:{...SUPA_HDR,'Prefer':'return=minimal'},
+        body:JSON.stringify({data})
+      });
+      if(!r.ok){const e=await r.text();console.warn('Supabase PATCH failed:',r.status,e);}
+    } else {
+      // No row - INSERT new one
+      const r=await fetch(SUPA_URL+'/rest/v1/'+table,{
+        method:'POST',
+        headers:{...SUPA_HDR,'Prefer':'return=minimal'},
+        body:JSON.stringify({user_id:uid,data})
+      });
+      if(!r.ok){const e=await r.text();console.warn('Supabase POST failed:',r.status,e);}
+    }
   }catch(e){console.warn('Supabase upsert error:',e);}
 }
 
-async function supaGet(table,id){
+// For tables with text id primary key (shopping_list, app_settings)
+async function supaUpsertText(table,id,data){
   try{
-    const r=await fetch(SUPA_URL+'/rest/v1/'+table+'?id=eq.'+id+'&select=data',
+    const r=await fetch(SUPA_URL+'/rest/v1/'+table,{
+      method:'POST',
+      headers:{...SUPA_HDR,'Prefer':'resolution=merge-duplicates,return=minimal'},
+      body:JSON.stringify({id,data})
+    });
+    if(!r.ok){const e=await r.text();console.warn('Supabase upsertText failed:',r.status,e);}
+  }catch(e){console.warn('Supabase upsertText error:',e);}
+}
+async function supaGet(table,uid){
+  try{
+    // Try user_id column first (recipes table), then id column (other tables)
+    let r=await fetch(SUPA_URL+'/rest/v1/'+table+'?user_id=eq.'+encodeURIComponent(uid)+'&select=data',
       {headers:{'apikey':SUPA_KEY,'Authorization':'Bearer '+SUPA_KEY}});
-    const rows=await r.json();
+    let rows=r.ok?await r.json():[];
+    if(!rows||rows.length===0){
+      // Fall back to text id column
+      r=await fetch(SUPA_URL+'/rest/v1/'+table+'?id=eq.'+encodeURIComponent(uid)+'&select=data',
+        {headers:{'apikey':SUPA_KEY,'Authorization':'Bearer '+SUPA_KEY}});
+      rows=r.ok?await r.json():[];
+    }
     return rows&&rows.length>0?rows[0].data:null;
-  }catch(e){return null;}
+  }catch(e){console.warn('Supabase get error:',e);return null;}
 }
 
 let _supaTimer=null;
@@ -849,8 +877,8 @@ function scheduleSupaSave(){
       units:state.units,sortOrder:state.sortOrder,allTags:state.allTags,
       savedIngredients:state.savedIngredients});
     await supaUpsert('recipes','default',recipes);
-    await supaUpsert('shopping_list','default',shop);
-    await supaUpsert('app_settings','singleton',settings);
+    await supaUpsertText('shopping_list','default',shop);
+    await supaUpsertText('app_settings','singleton',settings);
   },800);
 }
 
