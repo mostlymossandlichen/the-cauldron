@@ -256,7 +256,7 @@ body{font-family:var(--font-body);background:var(--h2);color:var(--ink);font-siz
 .shop-input::placeholder{color:var(--tm);}
 .shop-add-btn{background:var(--terd);border-radius:20px;padding:7px 14px;font-family:var(--font-body);font-size:12px;color:white;border:none;cursor:pointer;}
 .shop-hint{font-family:var(--font-body);font-size:9px;color:var(--tm);padding:6px 14px 2px;}
-.shop-item{display:flex;align-items:center;gap:9px;padding:9px 12px;background:var(--card);border-radius:10px;border:1px solid var(--sand);margin-bottom:6px;position:relative;overflow:hidden;transition:transform .2s ease;touch-action:pan-y;}
+.shop-item{display:flex;align-items:center;gap:9px;padding:9px 12px;background:var(--card);border-radius:10px;border:1px solid var(--sand);margin-bottom:6px;position:relative;overflow:hidden;transition:transform .2s ease;touch-action:pan-y;-webkit-user-select:none;user-select:none;}
 .shop-group-header{border-color:var(--h);border-width:1.5px;background:var(--h);color:var(--cr);}
 .shop-child-item{margin-left:22px;border-left:3px solid var(--h);border-radius:0 10px 10px 0;margin-bottom:3px;background:var(--parch);}
 .shop-name-input{font-family:var(--font-body);font-size:13px;color:var(--ink);background:transparent;border:none;outline:none;flex:1;min-width:10px;padding:0;}
@@ -512,7 +512,7 @@ body{font-family:var(--font-body);background:var(--h2);color:var(--ink);font-siz
     </div>
   </div>
   <div class="screen-body">
-    <div class="shop-hint">right-click or long press for options · drag &#8286; to reorder</div>
+    <div class="shop-hint">double-tap item for options · right-click on desktop · drag to reorder</div>
     <div style="padding:6px 14px 14px;" id="shop-list"></div>
   </div>
   <div class="bottom-nav">
@@ -902,7 +902,13 @@ async function loadFromSupabase(){
   }catch(e){}
   try{
     const s=await supaGet('shopping_list','default');
-    if(s){const p=typeof s==='string'?JSON.parse(s):s;if(Array.isArray(p))state.shoppingList=p;}
+    if(s){
+      const p=typeof s==='string'?JSON.parse(s):s;
+      if(Array.isArray(p)){
+        // Only overwrite if Supabase has data (prefer Supabase over empty localStorage)
+        if(p.length>0||state.shoppingList.length===0)state.shoppingList=p;
+      }
+    }
   }catch(e){}
   try{
     const cfg=await supaGet('app_settings','singleton');
@@ -1889,21 +1895,28 @@ function renderShopping(){
 let _shopLPTimer=null,_shopLPIdx=null;
 let _shopDragIdx=null,_shopDragStartY=0,_shopDragEl=null;
 
+// Double-tap for action menu on mobile
 let _shopLPStartX=0,_shopLPStartY=0;
+let _shopLastTap={idx:-1,time:0};
 function shopTouchStart(e,i){
   _shopLPStartX=e.touches[0].clientX;
   _shopLPStartY=e.touches[0].clientY;
-  _shopLPTimer=setTimeout(()=>{
-    if(navigator.vibrate)navigator.vibrate(30); // haptic feedback
+}
+function shopTouchMove(e,i){}
+function shopTouchEnd(e,i){
+  const now=Date.now();
+  const dx=Math.abs(e.changedTouches[0].clientX-_shopLPStartX);
+  const dy=Math.abs(e.changedTouches[0].clientY-_shopLPStartY);
+  if(dx>10||dy>10){_shopLastTap={idx:-1,time:0};return;} // moved = not a tap
+  if(_shopLastTap.idx===i&&now-_shopLastTap.time<350){
+    // Double tap!
+    _shopLastTap={idx:-1,time:0};
+    if(navigator.vibrate)navigator.vibrate(20);
     openShopActionMenu(i);
-  },600);
+  } else {
+    _shopLastTap={idx:i,time:now};
+  }
 }
-function shopTouchMove(e,i){
-  const dx=Math.abs(e.touches[0].clientX-_shopLPStartX);
-  const dy=Math.abs(e.touches[0].clientY-_shopLPStartY);
-  if(dx>10||dy>10)clearTimeout(_shopLPTimer);
-}
-function shopTouchEnd(e,i){clearTimeout(_shopLPTimer);}
 
 function shopDragHandleStart(e,i){
   e.stopPropagation();e.preventDefault();clearTimeout(_shopLPTimer);
@@ -2133,102 +2146,9 @@ function ungroupItem(i){
   }
   saveState();renderShopping();
 }
-function saveShopItemName(el){
-  const i=parseInt(el.dataset.idx);
-  if(isNaN(i)||!state.shoppingList[i])return;
-  const val=el.textContent.trim();
-  if(!val){el.textContent=state.shoppingList[i].name;return;}
-  state.shoppingList[i].name=val;
-  saveState();
-}
-
-// ── Shopping list — unified touch handler ────────────────────────────────────
-// Single ontouchstart/move/end on each item handles BOTH swipe-to-delete
-// and drag-to-reorder based on direction of movement.
-let shopSwipeX=0,shopSwipeY=0;
-let shopDragIdx=null,shopDragEl=null,shopDragStartY=0,shopDragMode=false;
-let shopDragPlaceholder=null;
-
-function shopTouchStart(e,i){
-  const t=e.touches[0];
-  shopSwipeX=t.clientX;shopSwipeY=t.clientY;
-  shopDragIdx=i;shopDragMode=false;
-  // Close any open swipe if tapping elsewhere
-  if(false)closeShopSwipe(shopSwiped);
-}
-
-function shopTouchMove(e,i){
-  if(e.touches.length!==1)return;
-  const t=e.touches[0];
-  const dx=t.clientX-shopSwipeX;
-  const dy=t.clientY-shopSwipeY;
-
-  if(!shopDragMode&&Math.abs(dy)>Math.abs(dx)&&Math.abs(dy)>8){
-    // Vertical movement = drag to reorder
-    shopDragMode=true;
-    shopDragStartY=t.clientY;
-    shopDragEl=document.getElementById('shop-item-'+i);
-    if(shopDragEl)shopDragEl.style.opacity='0.5';
-    e.preventDefault();
-  } else if(!shopDragMode&&Math.abs(dx)>Math.abs(dy)&&Math.abs(dx)>8){
-    // Horizontal movement = swipe to delete — let it handle in touchEnd
-    e.preventDefault();
-    return;
-  }
-
-  if(shopDragMode){
-    e.preventDefault();
-    // Visual feedback — shift the element
-    if(shopDragEl)shopDragEl.style.transform=`translateY(${dy}px)`;
-  }
-}
-
-function shopTouchEnd(e,i){
-  const t=e.changedTouches[0];
-  const dx=t.clientX-shopSwipeX;
-  const dy=t.clientY-shopSwipeY;
-
-  if(shopDragMode){
-    // Finish drag-to-reorder
-    if(shopDragEl){shopDragEl.style.opacity='';shopDragEl.style.transform='';}
-    const itemH=60;
-    let newIdx=i+Math.round(dy/itemH);
-    newIdx=Math.max(0,Math.min(state.shoppingList.length-1,newIdx));
-    if(newIdx!==i){
-      const moved=state.shoppingList.splice(i,1)[0];
-      state.shoppingList.splice(newIdx,0,moved);
-      saveState();
-    }
-    shopDragMode=false;shopDragIdx=null;shopDragEl=null;
-    renderShopping();
-    return;
-  }
-
-  // Swipe left to reveal delete
-  if(dx<-50&&Math.abs(dy)<30){
-    if(false)closeShopSwipe(shopSwiped);
-    
-    return;
-  }
-  // Swipe right to close delete
-  if(dx>20&&shopSwiped===i){closeShopSwipe(i);return;}
-}
 
 
-function indentItem(i){
-  const item=state.shoppingList[i];
-  const above=state.shoppingList[i-1];
-  if(!item||!above)return;
-  // Ensure above item has an id
-  if(!above.id)above.id='grp_'+Date.now();
-  // Make above item the header
-  above.isGroupHeader=true;
-  // Attach this item to that group
-  item.parentGroup=above.id;
-  if(!item.id)item.id='item_'+Date.now();
-  delete item.isGroupHeader;
-  saveState();renderShopping();
-}
+// Legacy touch handlers removed
 
 // Desktop drag (mouse) — still works on desktop
 let shopMouseDragIdx=null,shopMouseDragStartY=0,shopMouseDragging=false;
