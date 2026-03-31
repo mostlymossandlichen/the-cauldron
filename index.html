@@ -562,7 +562,7 @@ body{font-family:var(--font-body);background:var(--h2);color:var(--ink);font-siz
       <div class="settings-section">
         <div class="settings-section-title">data & sync</div>
         <div class="settings-row" onclick="openDriveSettings()"><div><div class="settings-row-label">Google Drive</div><div class="settings-row-sub" id="drive-status-text">● not connected</div></div><span class="settings-arrow">›</span></div>
-        <div class="settings-row" onclick="manualBackup()"><div class="settings-row-label">Manual backup now</div><span class="settings-arrow">›</span></div>
+        <div class="settings-row" onclick="manualBackup()" style="border-color:var(--h);"><div class="settings-row-label" style="color:var(--h);font-weight:600;">⬇ export backup (.json)</div><span class="settings-arrow">›</span></div><span class="settings-arrow">›</span></div>
         <div class="settings-row" onclick="restoreBackup()"><div class="settings-row-label">Restore from backup</div><span class="settings-arrow">›</span></div>
       </div>
       <div class="settings-section">
@@ -900,46 +900,8 @@ function loadState(){
 }
 
 async function loadFromSupabase(){
-  try{
-    const r=await supaGet('recipes','default');
-    if(r){const p=typeof r==='string'?JSON.parse(r):r;if(Array.isArray(p)&&p.length>0)state.recipes=p;}
-  }catch(e){}
-  try{
-    const s=await supaGet('shopping_list','default');
-    if(s){
-      const p=typeof s==='string'?JSON.parse(s):s;
-      if(Array.isArray(p)){
-        // Only overwrite if Supabase has data (prefer Supabase over empty localStorage)
-        if(p.length>0||state.shoppingList.length===0)state.shoppingList=p;
-      }
-    }
-  }catch(e){}
-  try{
-    const cfg=await supaGet('app_settings','singleton');
-    if(cfg){
-      const p=typeof cfg==='string'?JSON.parse(cfg):cfg;
-      if(p&&typeof p==='object'){
-        if(p.theme)state.theme=p.theme;
-        if(p.libraryName)state.libraryName=p.libraryName;
-        if(p.units)state.units=p.units;
-        if(p.sortOrder)state.sortOrder=p.sortOrder;
-        if(p.allTags)state.allTags=p.allTags;
-        if(p.savedIngredients)state.savedIngredients=p.savedIngredients;
-      }
-    }
-  }catch(e){}
-  try{localStorage.setItem('cauldron_v2',JSON.stringify(state));}catch(e){}
-  // Migrate rating on freshly loaded Supabase data too
-  state.recipes.forEach(r=>{
-    (r.iterations||[]).forEach(iter=>{
-      if(!iter.customFields)iter.customFields=[];
-      if(!iter.customFields.some(cf=>cf.type==='rating'))
-        iter.customFields.unshift({name:'Rating',type:'rating',value:0});
-    });
-  });
-  applyTheme();
-  renderHome();
-  renderShopping();
+  // Loading is now handled in init() — this is kept for compatibility
+  console.log('Supabase data loaded in init()');
 }
 
 // ═══════════════════════════════
@@ -2295,12 +2257,60 @@ function deleteIngFromManager(i){
   showToast('Removed from autocomplete (not from recipes)');
 }
 function manualBackup(){
-  const data=JSON.stringify(state,null,2);const blob=new Blob([data],{type:'application/json'});
-  const url=URL.createObjectURL(blob);const a=document.createElement('a');a.href=url;a.download='cauldron-backup.json';a.click();showToast('Backup downloaded!');
+  // Export full recipe data as JSON backup
+  const backup={
+    version:2,
+    exportedAt:new Date().toISOString(),
+    recipes:state.recipes,
+    shoppingList:state.shoppingList,
+    allTags:state.allTags,
+    savedIngredients:state.savedIngredients,
+    libraryName:state.libraryName,
+    theme:state.theme
+  };
+  const data=JSON.stringify(backup,null,2);
+  const blob=new Blob([data],{type:'application/json'});
+  const url=URL.createObjectURL(blob);
+  const a=document.createElement('a');
+  a.href=url;
+  a.download='spoon-cauldron-backup-'+new Date().toISOString().split('T')[0]+'.json';
+  a.click();
+  URL.revokeObjectURL(url);
+  showToast('Backup downloaded! Keep this file safe.');
 }
 function restoreBackup(){
-  const input=document.createElement('input');input.type='file';input.accept='.json';
-  input.onchange=e=>{const fr=new FileReader();fr.onload=ev=>{try{state={...state,...JSON.parse(ev.target.result)};saveState();renderSettings();showToast('Backup restored!');}catch{showToast('Invalid backup file');}};fr.readAsText(e.target.files[0]);};input.click();
+  const input=document.createElement('input');
+  input.type='file';input.accept='.json';
+  input.onchange=e=>{
+    const fr=new FileReader();
+    fr.onload=ev=>{
+      try{
+        const backup=JSON.parse(ev.target.result);
+        // Support both full backup format and raw state format
+        if(backup.recipes){
+          state.recipes=backup.recipes||state.recipes;
+          state.shoppingList=backup.shoppingList||state.shoppingList;
+          state.allTags=backup.allTags||state.allTags;
+          state.savedIngredients=backup.savedIngredients||state.savedIngredients;
+          if(backup.libraryName)state.libraryName=backup.libraryName;
+          if(backup.theme)state.theme=backup.theme;
+        } else {
+          // Raw state format (old backup)
+          state={...state,...backup};
+        }
+        saveState();
+        applyTheme();
+        renderHome();
+        renderSettings();
+        showToast('Backup restored! '+state.recipes.length+' recipes loaded.');
+      }catch(err){
+        showToast('Invalid backup file — could not restore.');
+        console.error('Restore error:',err);
+      }
+    };
+    fr.readAsText(e.target.files[0]);
+  };
+  input.click();
 }
 function exportAll(){
   const data=state.recipes.map(r=>`${r.name}\n${'='.repeat(r.name.length)}\nTags: ${(r.tags||[]).join(', ')}\n\n`+r.iterations.map((it,i)=>`Version ${i+1}${r.defaultIteration===i?' (default)':''}\nIngredients:\n${(it.ingredients||[]).map(ing=>`  - ${ing.amount} ${ing.unit} ${ing.name}`).join('\n')}\nNotes: ${it.notes||'—'}\n`).join('\n---\n')).join('\n\n═══════════════\n\n');
@@ -2419,8 +2429,7 @@ function applyTheme(){
   document.documentElement.setAttribute('data-theme',tv);
 }
 
-function init(){
-  loadState();
+function migrateState(){
   // Migrate old library name
   if(!state.libraryName||state.libraryName==='The Cauldron'||state.libraryName==='The Cauldron & Spoon'){
     state.libraryName='The Spoon & Cauldron';
@@ -2433,15 +2442,72 @@ function init(){
       if(!hasRating)iter.customFields.unshift({name:'Rating',type:'rating',value:0});
     });
   });
+}
+
+async function init(){
+  // Step 1: Load from localStorage instantly for fast startup
+  loadState();
+  migrateState();
   applyTheme();
-  const hasV1=!!localStorage.getItem('cauldron_state');
-  if(state.recipes.length===0&&!hasV1){loadSampleData();}
-  saveState();
-  // Show setup screen only on very first launch (no recipes, no localStorage)
-  const isFirstLaunch=!localStorage.getItem('cauldron_v2')&&!localStorage.getItem('cauldron_state');
+
+  // Step 2: Try to load from Supabase FIRST before deciding on sample data
+  // This prevents sample data from overwriting real Supabase data
+  let supaRecipes=null;
+  try{
+    const r=await supaGet('recipes','default');
+    if(r){
+      const p=typeof r==='string'?JSON.parse(r):r;
+      if(Array.isArray(p)&&p.length>0){
+        supaRecipes=p;
+        // Check if Supabase has REAL recipes (not just sample data)
+        const hasSampleOnly=p.length<=3&&p.every(r=>['1','2','3'].includes(r.id));
+        if(!hasSampleOnly){
+          state.recipes=p;
+          migrateState();
+        } else if(state.recipes.length>3||state.recipes.some(r=>!['1','2','3'].includes(r.id))){
+          // localStorage has more/different recipes - keep those
+        } else {
+          state.recipes=p;
+        }
+      }
+    }
+  }catch(e){console.warn('Supabase initial load error:',e);}
+
+  // Step 3: Load sample data ONLY if truly no recipes anywhere
+  if(state.recipes.length===0){
+    loadSampleData();
+    // Don't save sample data to Supabase - wait for user to make real changes
+  }
+
+  // Step 4: Load rest of settings from Supabase
+  try{
+    const s=await supaGet('shopping_list','default');
+    if(s){const p=typeof s==='string'?JSON.parse(s):s;if(Array.isArray(p)&&p.length>0)state.shoppingList=p;}
+  }catch(e){}
+  try{
+    const cfg=await supaGet('app_settings','singleton');
+    if(cfg){
+      const p=typeof cfg==='string'?JSON.parse(cfg):cfg;
+      if(p&&typeof p==='object'){
+        if(p.theme)state.theme=p.theme;
+        if(p.libraryName)state.libraryName=p.libraryName;
+        if(p.units)state.units=p.units;
+        if(p.sortOrder)state.sortOrder=p.sortOrder;
+        if(p.allTags)state.allTags=p.allTags;
+        if(p.savedIngredients)state.savedIngredients=p.savedIngredients;
+      }
+    }
+  }catch(e){}
+
+  // Step 5: Cache to localStorage and render
+  try{localStorage.setItem('cauldron_v2',JSON.stringify(state));}catch(e){}
+  applyTheme();
+  migrateState();
+
+  const isFirstLaunch=!supaRecipes&&!localStorage.getItem('cauldron_state');
   showScreen(isFirstLaunch?'setup':'home');
-  // Load fresh data from Supabase in background
-  loadFromSupabase();
+  renderHome();
+  renderShopping();
 }
 init();
 </script>
