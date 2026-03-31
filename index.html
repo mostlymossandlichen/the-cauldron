@@ -119,6 +119,8 @@ body{font-family:var(--font-body);background:var(--h2);color:var(--ink);font-siz
 .recipe-card-cover{height:70px;display:flex;align-items:center;justify-content:center;font-size:28px;background:var(--tagbg);position:relative;overflow:hidden;}
 .recipe-card-cover img{width:100%;height:100%;object-fit:cover;}
 .recipe-card-fav{position:absolute;top:5px;right:6px;z-index:2;filter:drop-shadow(0 1px 2px rgba(0,0,0,0.5));}
+.recipe-card-menu-btn{font-size:16px;color:var(--inks);cursor:pointer;padding:0 4px;margin-left:auto;-webkit-user-select:none;user-select:none;letter-spacing:1px;}
+@media(hover:hover){.recipe-card-menu-btn{opacity:0;}.recipe-card:hover .recipe-card-menu-btn{opacity:1;}}
 .recipe-card-body{padding:7px 9px 9px;}
 .recipe-card-name{font-family:var(--font-display);font-size:12px;color:var(--ink);line-height:1.3;margin-bottom:4px;}
 .recipe-card-meta{display:flex;align-items:center;justify-content:space-between;margin-bottom:3px;}
@@ -155,7 +157,7 @@ body{font-family:var(--font-body);background:var(--h2);color:var(--ink);font-siz
 /* Iteration bar */
 .iter-bar{background:var(--h2);padding:8px 14px;display:flex;align-items:center;gap:7px;flex-shrink:0;overflow-x:auto;scrollbar-width:none;}
 .iter-bar::-webkit-scrollbar{display:none;}
-.iter-dot{width:30px;height:30px;border-radius:50%;background:rgba(255,255,255,.1);border:1.5px solid rgba(255,255,255,.2);display:flex;align-items:center;justify-content:center;font-family:var(--font-body);font-size:9px;color:#90c0bc;flex-shrink:0;cursor:pointer;position:relative;transition:all .15s;user-select:none;}
+.iter-dot{width:30px;height:30px;border-radius:50%;background:rgba(255,255,255,.1);border:1.5px solid rgba(255,255,255,.2);display:flex;align-items:center;justify-content:center;font-family:var(--font-body);font-size:9px;color:#90c0bc;flex-shrink:0;cursor:pointer;position:relative;transition:all .15s;user-select:none;;-webkit-user-select:none;user-select:none;}
 .iter-dot.active{background:var(--terd);border-color:var(--terdd);color:white;}
 .iter-dot.default-iter{border-color:var(--ambd);}
 .iter-dot.wiggling{animation:wiggle .3s infinite;}
@@ -312,7 +314,7 @@ body{font-family:var(--font-body);background:var(--h2);color:var(--ink);font-siz
 .toast{position:absolute;bottom:80px;left:50%;transform:translateX(-50%);background:var(--h);color:var(--tl);font-family:var(--font-body);font-size:12px;padding:8px 18px;border-radius:20px;z-index:300;opacity:0;transition:opacity .3s ease;white-space:nowrap;pointer-events:none;}
 .toast.show{opacity:1;}
 /* Undo bar */
-.undo-bar{position:absolute;bottom:70px;left:14px;right:14px;background:var(--h2);color:var(--tl);font-family:var(--font-body);font-size:12px;padding:10px 14px;border-radius:12px;z-index:250;display:none;align-items:center;justify-content:space-between;}
+.undo-bar{position:absolute;top:calc(env(safe-area-inset-top,0px) + 8px);left:14px;right:14px;background:var(--h2);color:var(--tl);font-family:var(--font-body);font-size:12px;padding:10px 14px;border-radius:12px;z-index:250;display:none;align-items:center;justify-content:space-between;}
 .undo-bar.show{display:flex;}
 .undo-btn{font-family:var(--font-body);font-size:12px;color:var(--ambd);font-weight:500;cursor:pointer;padding:2px 8px;border:1px solid var(--ambd);border-radius:8px;background:none;}
 /* Setup */
@@ -356,7 +358,7 @@ body{font-family:var(--font-body);background:var(--h2);color:var(--ink);font-siz
 .manager-del-btn{font-family:var(--font-body);font-size:11px;color:var(--swipe-del);cursor:pointer;background:none;border:none;padding:2px 4px;}
 /* Recipe card duplicate btn in library */
 .recipe-card-menu{position:absolute;top:5px;left:6px;font-size:14px;color:rgba(255,255,255,0.8);z-index:2;cursor:pointer;background:rgba(0,0,0,0.2);border-radius:6px;padding:1px 5px;display:none;}
-.recipe-card:hover .recipe-card-menu{display:block;}
+
 </style>
 </head>
 <body>
@@ -428,8 +430,9 @@ body{font-family:var(--font-body);background:var(--h2);color:var(--ink);font-siz
             <svg width="22" height="20" viewBox="0 0 64 58" fill="none"><path d="M36 30 Q36 19 46 18 Q56 19 56 30 Q51 34 46 34 Q41 34 36 30Z" fill="#7a4e10"/><rect x="43" y="34" width="5" height="12" rx="2.5" fill="#a07018"/><path d="M4 30 Q4 14 20 12 Q36 14 36 30 Q29 35 20 35 Q11 35 4 30Z" fill="#CC8D1A"/><circle cx="10" cy="22" r="3" fill="#f5e080" opacity=".6"/><rect x="17" y="35" width="6" height="14" rx="3" fill="#f5e070"/></svg>
             set default
           </button>
-          <button class="action-btn" onclick="duplicateIteration()">duplicate</button>
+          <button class="action-btn" onclick="duplicateIteration()">duplicate version</button>
           <button class="action-btn" onclick="editCurrentRecipe()">edit</button>
+          <button class="action-btn" onclick="openCardMenu(currentRecipeId)" style="margin-left:auto;font-size:16px;padding:2px 8px;letter-spacing:1px;">&#8943;</button>
 
         </div>
       </div>
@@ -512,7 +515,7 @@ body{font-family:var(--font-body);background:var(--h2);color:var(--ink);font-siz
     </div>
   </div>
   <div class="screen-body">
-    <div class="shop-hint">double-tap item for options · right-click on desktop · drag to reorder</div>
+    <div class="shop-hint">tap ⋯ for options · drag ⠿ to reorder</div>
     <div style="padding:6px 14px 14px;" id="shop-list"></div>
   </div>
   <div class="bottom-nav">
@@ -771,6 +774,7 @@ body{font-family:var(--font-body);background:var(--h2);color:var(--ink);font-siz
     <div style="display:flex;flex-direction:column;gap:8px;">
       <button onclick="cardMenuDuplicate()" style="width:100%;padding:12px;background:var(--card);border:1px solid var(--sand);border-radius:12px;font-family:var(--font-body);font-size:14px;color:var(--ink);cursor:pointer;text-align:left;">📋 Duplicate recipe</button>
       <button onclick="cardMenuDelete()" style="width:100%;padding:12px;background:rgba(160,32,32,0.1);border:1px solid rgba(160,32,32,0.3);border-radius:12px;font-family:var(--font-body);font-size:14px;color:var(--swipe-del);cursor:pointer;text-align:left;">🗑️ Delete recipe</button>
+      <button onclick="closeModal('modal-card-menu')" style="width:100%;padding:10px;background:none;border:none;font-family:var(--font-body);font-size:13px;color:var(--inks);cursor:pointer;">cancel</button>
     </div>
   </div>
 </div>
@@ -1017,7 +1021,7 @@ function renderHome(){
         </div>
         <div class="recipe-card-body">
           <div class="recipe-card-name">${r.name}</div>
-          <div class="recipe-card-meta"><span class="recipe-card-tag">${(r.tags||[])[0]||'untagged'}</span><span class="recipe-card-iters">${r.iterations.length}v</span></div>
+          <div class="recipe-card-meta"><span class="recipe-card-tag">${(r.tags||[])[0]||'untagged'}</span><span class="recipe-card-iters">${r.iterations.length}v</span><span class="recipe-card-menu-btn" onclick="event.stopPropagation();openCardMenu('${r.id}')" ontouchstart="event.stopPropagation()" ontouchend="event.stopPropagation();event.preventDefault();openCardMenu('${r.id}')">&#8943;</span></div>
           <div class="stars">${renderStars(getRecipeRating(r))}</div>
         </div>
       </div>`).join('');
@@ -1043,12 +1047,9 @@ function cycleSortOrder(){const o=['recent','name','rating'];state.sortOrder=o[(
 // ═══════════════════════════════
 // Long press recipe card menu
 let cardLongPressTimer=null,cardLongPressId=null,cardTouchMoved=false;
-function cardTouchStart(e,id){
-  cardTouchMoved=false;
-  cardLongPressTimer=setTimeout(()=>{if(!cardTouchMoved){openCardMenu(id);}},600);
-}
-function cardTouchMove(e){cardTouchMoved=true;clearTimeout(cardLongPressTimer);}
-function cardTouchEnd(e){clearTimeout(cardLongPressTimer);}
+function cardTouchStart(e,id){cardTouchMoved=false;}
+function cardTouchMove(e){cardTouchMoved=true;}
+function cardTouchEnd(e){}
 function openCardMenu(id){
   cardLongPressId=id;
   const r=state.recipes.find(x=>x.id===id);
@@ -1836,7 +1837,10 @@ function renderShopping(){
   const chkSvg='<svg width="10" height="8" viewBox="0 0 10 8"><polyline points="1,4 4,7 9,1" stroke="white" stroke-width="1.8" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>';
   function mkDrag(idx,isHdr){
     const col=isHdr?' style="color:var(--cr);opacity:0.7;"':'';
-    return '<span class="shop-drag"'+col+' style="touch-action:none;" draggable="true" onmousedown="shopMouseDragStart(event,'+idx+')" ontouchstart="shopDragHandleStart(event,'+idx+')" ontouchmove="shopDragHandleMove(event,'+idx+')" ontouchend="shopDragHandleEnd(event,'+idx+')"><svg width=\"10\" height=\"14\" viewBox=\"0 0 10 14\" fill=\"currentColor\"><circle cx=\"2\" cy=\"2\" r=\"1.5\"/><circle cx=\"8\" cy=\"2\" r=\"1.5\"/><circle cx=\"2\" cy=\"7\" r=\"1.5\"/><circle cx=\"8\" cy=\"7\" r=\"1.5\"/><circle cx=\"2\" cy=\"12\" r=\"1.5\"/><circle cx=\"8\" cy=\"12\" r=\"1.5\"/></svg></span>';
+    const menuCol=isHdr?'color:var(--cr);opacity:0.7;':'color:var(--inks);';
+    const ellipsis='<span style="'+menuCol+'font-size:16px;padding:2px 6px;cursor:pointer;flex-shrink:0;" onclick="openShopActionMenu('+idx+')">&#8943;</span>';
+    const drag='<span class="shop-drag"'+col+' style="touch-action:none;" draggable="true" onmousedown="shopMouseDragStart(event,'+idx+')" ontouchstart="shopDragHandleStart(event,'+idx+')" ontouchmove="shopDragHandleMove(event,'+idx+')" ontouchend="shopDragHandleEnd(event,'+idx+')"><svg width=\"10\" height=\"14\" viewBox=\"0 0 10 14\" fill=\"currentColor\"><circle cx=\"2\" cy=\"2\" r=\"1.5\"/><circle cx=\"8\" cy=\"2\" r=\"1.5\"/><circle cx=\"2\" cy=\"7\" r=\"1.5\"/><circle cx=\"8\" cy=\"7\" r=\"1.5\"/><circle cx=\"2\" cy=\"12\" r=\"1.5\"/><circle cx=\"8\" cy=\"12\" r=\"1.5\"/></svg></span>';
+    return ellipsis+drag;
   }
 
   let i=0;
@@ -1867,6 +1871,7 @@ function renderShopping(){
           html+='<div class="shop-checkbox'+(child.checked?' checked':'')+'" onclick="toggleShopItem('+ci+')">'+(child.checked?chkSvg:'')+'</div>';
           html+='<input class="shop-name-input" data-idx="'+ci+'" value="'+child.name.replace(/"/g,'&quot;')+'" onblur="saveShopItemName(this,'+ci+')" onkeydown="shopInputKey(event)"/>';
           if(child.amount)html+='<span class="shop-item-amt">'+child.amount+'</span>';
+          html+='<span style="color:var(--inks);font-size:16px;padding:2px 6px;cursor:pointer;flex-shrink:0;" onclick="openShopActionMenu('+ci+')">&#8943;</span>';
           html+='</div>';
           i++;
         }
@@ -1907,14 +1912,10 @@ function shopTouchEnd(e,i){
   const now=Date.now();
   const dx=Math.abs(e.changedTouches[0].clientX-_shopLPStartX);
   const dy=Math.abs(e.changedTouches[0].clientY-_shopLPStartY);
-  if(dx>10||dy>10){_shopLastTap={idx:-1,time:0};return;} // moved = not a tap
-  if(_shopLastTap.idx===i&&now-_shopLastTap.time<350){
-    // Double tap!
-    _shopLastTap={idx:-1,time:0};
-    if(navigator.vibrate)navigator.vibrate(20);
-    openShopActionMenu(i);
-  } else {
-    _shopLastTap={idx:i,time:now};
+  if(dx>10||dy>10){_shopLastTap={idx:-1,time:0};return;}
+  // Single tap on item — just dismiss keyboard if open
+  if(document.activeElement&&document.activeElement.tagName==='INPUT'){
+    document.activeElement.blur();
   }
 }
 
@@ -2037,7 +2038,7 @@ function createShopGroupFrom(i){
   btns.innerHTML='';
   const inp=document.createElement('input');
   inp.id='shop-group-name-input';inp.className='field-input';
-  inp.placeholder='Group name...';inp.value=item.name;
+  inp.placeholder='Group name...';inp.value='';
   inp.style.marginBottom='10px';
   inp.addEventListener('keydown',function(e){if(e.key==='Enter')confirmCreateShopGroup(i);});
   const createBtn=document.createElement('button');
