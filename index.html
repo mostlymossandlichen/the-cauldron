@@ -561,8 +561,8 @@ body{font-family:var(--font-body);background:var(--h2);color:var(--ink);font-siz
       </div>
       <div class="settings-section">
         <div class="settings-section-title">data & sync</div>
-        <div class="settings-row" onclick="openDriveSettings()"><div><div class="settings-row-label">Google Drive</div><div class="settings-row-sub" id="drive-status-text">● not connected</div></div><span class="settings-arrow">›</span></div>
-        <div class="settings-row" onclick="manualBackup()" style="border-color:var(--h);"><div class="settings-row-label" style="color:var(--h);font-weight:600;">⬇ export backup (.json)</div><span class="settings-arrow">›</span></div><span class="settings-arrow">›</span></div>
+        <div class="settings-row" style="cursor:default;"><div><div class="settings-row-label">Cloud Sync</div><div class="settings-row-sub" id="sync-status-text">● checking...</div></div></div>
+        <div class="settings-row" onclick="manualBackup()" style="border-color:var(--h);"><div class="settings-row-label" style="color:var(--h);font-weight:600;">⬇ export backup (.json)</div><span class="settings-arrow">›</span></div>
         <div class="settings-row" onclick="restoreBackup()"><div class="settings-row-label">Restore from backup</div><span class="settings-arrow">›</span></div>
       </div>
       <div class="settings-section">
@@ -2173,9 +2173,31 @@ const THEMES=[
   {id:'fungi-glow',name:'Fungi Glow',hBg:'#254159',hC:'#F2CD5C',bBg:'#101820',dots:['#254159','#5687A6','#F2CD5C','#D9851E']},
   {id:'salt-ponds',name:'Salt Ponds',hBg:'#148C80',hC:'#fdf6e0',bBg:'#f0e8d0',dots:['#148C80','#8ABFBF','#F28B0C','#D96B0B']},
 ];
+
+
+async function checkSupabaseConnection(){
+  const el=document.getElementById('sync-status-text');
+  if(!el)return;
+  try{
+    const r=await fetch(SUPA_URL+'/rest/v1/app_settings?id=eq.singleton&select=id',
+      {headers:{'apikey':SUPA_KEY,'Authorization':'Bearer '+SUPA_KEY}});
+    if(r.ok){
+      el.style.color='var(--h)';
+      el.textContent='● connected via Supabase';
+    } else {
+      el.style.color='var(--inks)';
+      el.textContent='● sync error ('+r.status+')';
+    }
+  }catch(e){
+    el.style.color='var(--inks)';
+    el.textContent='● offline (using local data)';
+  }
+}
+
 function renderSettings(){
   document.getElementById('settings-library-name').textContent=(state.libraryName||'The Spoon & Cauldron')+' ✎';
-  document.getElementById('drive-status-text').innerHTML=state.driveConnected?'<span style="color:var(--h)">●</span> connected':'<span style="color:var(--inks)">●</span> not connected';
+  // Check live Supabase connection status
+  checkSupabaseConnection();
   document.getElementById('units-value').textContent=(state.units==='imperial'?'Imperial':'Metric')+' ›';
   document.getElementById('sort-setting-value').textContent=state.sortOrder.charAt(0).toUpperCase()+state.sortOrder.slice(1)+' ›';
   document.getElementById('theme-grid').innerHTML=THEMES.map(t=>`
@@ -2506,8 +2528,7 @@ async function init(){
 
   const isFirstLaunch=!supaRecipes&&!localStorage.getItem('cauldron_state');
   showScreen(isFirstLaunch?'setup':'home');
-  renderHome();
-  renderShopping();
+  // showScreen already calls renderHome/renderShopping internally
 }
 init();
 </script>
