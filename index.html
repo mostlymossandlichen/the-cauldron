@@ -512,7 +512,7 @@ body{font-family:var(--font-body);background:var(--h2);color:var(--ink);font-siz
     </div>
   </div>
   <div class="screen-body">
-    <div class="shop-hint">long press item for options · drag ⠿ to reorder</div>
+    <div class="shop-hint">right-click or long press for options · drag &#8286; to reorder</div>
     <div style="padding:6px 14px 14px;" id="shop-list"></div>
   </div>
   <div class="bottom-nav">
@@ -1798,7 +1798,7 @@ function renderShopping(){
     return;
   }
   let html='';
-  const delSvg='<svg width="18" height="18" viewBox="0 0 24 24" fill="none"><polyline points="3 6 5 6 21 6" stroke="white" stroke-width="1.8" stroke-linecap="round"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6" stroke="white" stroke-width="1.8" stroke-linecap="round"/><path d="M10 11v6M14 11v6" stroke="white" stroke-width="1.8" stroke-linecap="round"/></svg>';
+  const delSvg=''; // Removed - delete handled by long-press menu
   const chkSvg='<svg width="10" height="8" viewBox="0 0 10 8"><polyline points="1,4 4,7 9,1" stroke="white" stroke-width="1.8" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>';
   function mkDrag(idx,isHdr){
     const col=isHdr?' style="color:var(--cr);opacity:0.7;"':'';
@@ -1864,10 +1864,20 @@ function renderShopping(){
 let _shopLPTimer=null,_shopLPIdx=null;
 let _shopDragIdx=null,_shopDragStartY=0,_shopDragEl=null;
 
+let _shopLPStartX=0,_shopLPStartY=0;
 function shopTouchStart(e,i){
-  _shopLPTimer=setTimeout(()=>openShopActionMenu(i),600);
+  _shopLPStartX=e.touches[0].clientX;
+  _shopLPStartY=e.touches[0].clientY;
+  _shopLPTimer=setTimeout(()=>{
+    if(navigator.vibrate)navigator.vibrate(30); // haptic feedback
+    openShopActionMenu(i);
+  },600);
 }
-function shopTouchMove(e,i){clearTimeout(_shopLPTimer);}
+function shopTouchMove(e,i){
+  const dx=Math.abs(e.touches[0].clientX-_shopLPStartX);
+  const dy=Math.abs(e.touches[0].clientY-_shopLPStartY);
+  if(dx>10||dy>10)clearTimeout(_shopLPTimer);
+}
 function shopTouchEnd(e,i){clearTimeout(_shopLPTimer);}
 
 function shopDragHandleStart(e,i){
@@ -1875,6 +1885,16 @@ function shopDragHandleStart(e,i){
   _shopDragIdx=i;_shopDragStartY=e.touches[0].clientY;
   _shopDragEl=document.getElementById('shop-item-'+i);
   if(_shopDragEl){_shopDragEl.style.opacity='0.5';}
+  // Also dim children visually
+  const item=state.shoppingList[i];
+  if(item&&item.isGroupHeader){
+    let j=i+1;
+    while(j<state.shoppingList.length&&state.shoppingList[j].parentGroup===item.id){
+      const cel=document.getElementById('shop-item-'+j);
+      if(cel)cel.style.opacity='0.5';
+      j++;
+    }
+  }
 }
 function shopDragHandleMove(e,i){
   if(_shopDragIdx===null)return;
@@ -1884,17 +1904,31 @@ function shopDragHandleMove(e,i){
 }
 function shopDragHandleEnd(e,i){
   if(_shopDragIdx===null)return;
-  if(_shopDragEl){_shopDragEl.style.opacity='';_shopDragEl.style.transform='';}
+  // Reset visual state on header
+  if(_shopDragEl){_shopDragEl.style.opacity='1';_shopDragEl.style.transform='';}
+  // Reset children visual state too
+  const srcItem=state.shoppingList[i];
+  if(srcItem&&srcItem.isGroupHeader){
+    let j=i+1;
+    while(j<state.shoppingList.length&&state.shoppingList[j].parentGroup===srcItem.id){
+      const cel=document.getElementById('shop-item-'+j);
+      if(cel){cel.style.opacity='1';cel.style.transform='';}
+      j++;
+    }
+  }
   const dy=e.changedTouches[0].clientY-_shopDragStartY;
-  const rowH=56;
+  const rowH=54;
   const item=state.shoppingList[i];
-  // Move group as unit
+  if(!item){_shopDragIdx=null;_shopDragEl=null;renderShopping();return;}
+  // Calculate group size BEFORE modifying list
   let groupSize=1;
-  if(item&&item.isGroupHeader){
+  if(item.isGroupHeader){
     let j=i+1;
     while(j<state.shoppingList.length&&state.shoppingList[j].parentGroup===item.id){groupSize++;j++;}
   }
-  let newIdx=Math.max(0,Math.min(state.shoppingList.length-groupSize,i+Math.round(dy/rowH)));
+  const maxIdx=Math.max(0,state.shoppingList.length-groupSize);
+  let newIdx=Math.max(0,Math.min(maxIdx,i+Math.round(dy/rowH)));
+  // Skip over collapsed children when calculating destination
   if(newIdx!==i){
     const moved=state.shoppingList.splice(i,groupSize);
     state.shoppingList.splice(newIdx,0,...moved);
@@ -2157,15 +2191,7 @@ function shopTouchEnd(e,i){
   if(dx>20&&shopSwiped===i){closeShopSwipe(i);return;}
 }
 
-function closeShopSwipe(i){
-  const item=document.getElementById('shop-item-'+i);
-  const del=document.getElementById('shop-del-'+i);
-  if(item)item.classList.remove('swiping');
-  if(del)del.style.display='none';
-  shopSwiped=null;
-}
 
-// Indent button: tap ↦ to make item a child of the item above it
 function indentItem(i){
   const item=state.shoppingList[i];
   const above=state.shoppingList[i-1];
@@ -2224,15 +2250,7 @@ function shopMouseDragStart(e,i){
   document.addEventListener('mousemove',onMove);
   document.addEventListener('mouseup',onUp);
 }
-// Close swipe on tap elsewhere
-document.addEventListener('touchstart',e=>{
-  if(shopSwiped!==null){
-    const t=e.target;
-    if(!t.closest('#shop-del-'+shopSwiped)&&!t.closest('#shop-item-'+shopSwiped)){
-      closeShopSwipe(shopSwiped);
-    }
-  }
-},{passive:true});
+// Swipe-to-delete removed — long press menu handles delete
 
 // ═══════════════════════════════
 // SETTINGS
